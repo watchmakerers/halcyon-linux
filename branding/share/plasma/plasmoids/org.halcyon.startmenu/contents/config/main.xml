@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="icon" type="String">
+      <default>/usr/share/pixmaps/halcyon-logo.png</default>
+    </entry>
+    <!-- Let the orb rise out of the taskbar into a floating panel's gap. -->
+    <entry name="floatingOrb" type="Bool">
+      <default>true</default>
+    </entry>
+    <!-- Seeds the pinned list on first run; afterwards pins live in KActivities. -->
+    <entry name="favoriteApps" type="StringList">
+      <default>preferred://browser,preferred://mail</default>
+    </entry>
+    <entry name="favoritesPortedToKAstats" type="Bool">
+      <default>false</default>
+    </entry>
+    <!-- Shown under the pinned programs until real usage history exists. -->
+    <entry name="starterApps" type="StringList">
+      <default>halcyon-welcome.desktop,halcyon-games.desktop,halcyon-photos.desktop,halcyon-mediacenter.desktop,halcyon-player.desktop,halcyon-notes.desktop,org.kde.konsole.desktop</default>
+    </entry>
+  </group>
+</kcfg>

@@ -4,9 +4,9 @@ panel.location = "bottom";
 panel.height = Math.round(gridUnit * 2.1);
 panel.floating = true;  // detached + all four corners rounded
 
-var kickoff = panel.addWidget("org.kde.plasma.kickoff");
-kickoff.currentConfigGroup = ["General"];
-kickoff.writeConfig("icon", "/usr/share/pixmaps/halcyon-logo.png");
+var start = panel.addWidget("org.halcyon.startmenu");  // Vista-style Start orb + menu
+start.currentConfigGroup = ["General"];
+start.writeConfig("icon", "/usr/share/pixmaps/halcyon-logo.png");
 
 panel.addWidget("org.halcyon.workspaces");  // numbered round workspace orbs
 var tasks = panel.addWidget("org.kde.plasma.icontasks");
