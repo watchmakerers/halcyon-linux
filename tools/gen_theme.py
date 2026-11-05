@@ -173,9 +173,28 @@ FROST_GLASS = Glass(top=("#ffffff", 0.94), sheen=("#f2faff", 0.88), base=("#e2f3
 # Dark Aero glass: deep blue-black, bright sheen across the top half.
 DARK_GLASS = Glass(top=("#bfe9ff", 0.42), sheen=("#3a7fb0", 0.34), base=("#061a2e", 0.62),
                    bottom=("#0b3554", 0.72), outline=("#000a14", 0.85), highlight=("#ffffff", 0.32))
+
+def _over(fg, under):
+    """Blend a (colour, alpha) pair onto an opaque colour -> opaque (colour, 1)."""
+    (c, a), u = fg, under
+    mix = [round(int(c[i:i + 2], 16) * a + int(u[i:i + 2], 16) * (1 - a)) for i in (1, 3, 5)]
+    return ("#%02x%02x%02x" % tuple(mix), 1.0)
+
+
+def solid(g, under):
+    """The same glass, pre-blended onto `under` so nothing behind shows through.
+    Its colour then comes from the theme alone, not from the wallpaper."""
+    return Glass(top=_over(g.top, under), sheen=_over(g.sheen, under), base=_over(g.base, under),
+                 bottom=_over(g.bottom, under), outline=_over(g.outline, under),
+                 highlight=_over(g.highlight, under), split=g.split)
+
+
 DARK_POPUP = Glass(top=("#9fdcff", 0.30), sheen=("#123a5c", 0.80), base=("#0a2236", 0.86),
                    bottom=("#0d2c46", 0.90), outline=("#000a14", 0.85), highlight=("#ffffff", 0.28),
                    split=0.08)
+
+# The taskbar: DARK_GLASS as it looks over a deep Aero blue, fully opaque.
+PANEL_GLASS = solid(DARK_GLASS, "#0a2238")
 
 
 def plasma_frame_svg(glass, c=8, r=6, with_shadow=True, margins=None, prefixes=("",)):
@@ -196,9 +215,10 @@ def plasma_frame_svg(glass, c=8, r=6, with_shadow=True, margins=None, prefixes=(
 
 def gen_plasma():
     base = "plasma/desktoptheme/Halcyon"
-    # Panel: dark glass. Small margins so applet icons get a full 32px.
+    # Panel: dark glass made solid, so the taskbar keeps the theme's colour over
+    # any wallpaper. Small margins so applet icons get a full 32px.
     write(f"{base}/widgets/panel-background.svg",
-          plasma_frame_svg(DARK_GLASS, c=6, r=6, prefixes=("", "north", "south", "east", "west"),
+          plasma_frame_svg(PANEL_GLASS, c=6, r=6, prefixes=("", "north", "south", "east", "west"),
                            margins={"top-margin": 2, "bottom-margin": 2, "left-margin": 6, "right-margin": 6}))
     write(f"{base}/dialogs/background.svg",
           plasma_frame_svg(DARK_POPUP, c=10, r=8,
