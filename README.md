@@ -203,3 +203,7 @@ interface sounds from `games/halcyon_games/sfx.py`.
 repo on a GitHub release. Installed systems have `[halcyon]` in `/etc/pacman.conf`
 pointing at the latest release, so `halcyon-update` (or `pacman -Syu`) picks it up.
 A daily user timer (`halcyon-update-check.timer`) notifies when updates are waiting.
+
+## License
+
+Halcyon Linux is released under the [MIT License](LICENSE).
