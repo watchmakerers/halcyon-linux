@@ -53,6 +53,10 @@ The ISO lands in `out/`. Test it with
   `Super+K` shows the cheat sheet. Hyprland-only bindings (groups, scratchpad, universal copy/paste) are omitted.
 - **Desktop modes**: `halcyon-mode classic|tiling|toggle` (or `Super+Ctrl+Alt+Space`) switches live between the
   floating Aero desktop and Hyprland-style tiling (Krohnkite, gaps, borderless glowing-edge windows, top bar).
+- **Window Color** (`halcyon-colors`, in the app menu and Welcome Center): recolour the taskbar, Start menu, window
+  borders and highlights with Vista-style colours (Sky, Twilight, Sea, Leaf, Lime, Sun, Pumpkin, Ruby, Fuchsia, Blush,
+  Violet, Lavender, Taupe, Chocolate, Slate, Graphite, Frost) or any custom colour. Tiling mode keeps the colour, and
+  it's re-applied automatically after Halcyon updates.
 - **Gaming Setup** (`halcyon-gaming`, in the app menu): pick Steam, Wine, Lutris, Heroic, MangoHud, GameMode,
   Gamescope, ProtonUp-Qt, NVIDIA driver, Zen kernel…; installs with your password via pkexec.
 

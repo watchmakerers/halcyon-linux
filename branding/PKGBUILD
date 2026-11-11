@@ -1,6 +1,6 @@
 # Local package: built straight from this directory by ../build.sh.
 pkgname=halcyon-branding
-pkgver=2026.10.31.0102
+pkgver=2026.11.10.1616
 pkgrel=1
 pkgdesc="Halcyon Linux Frutiger Aero theme: Plasma style, window decoration, SDDM, Plymouth, defaults"
 arch=(any)
@@ -86,7 +86,7 @@ package() {
     done
     install -Dm644 "$startdir/etc/sddm.conf.d/10-halcyon.conf" "$pkgdir/etc/sddm.conf.d/10-halcyon.conf"
     for f in kwinrc plasmarc kcminputrc ksplashrc kscreenlockerrc konsolerc \
-             fastfetch/config.jsonc autostart/halcyon-yakuake.desktop autostart/halcyon-autoplay.desktop autostart/halcyon-screensaver.desktop autostart/halcyon-osk.desktop autostart/halcyon-gadgets.desktop autostart/halcyon-welcome.desktop autostart/halcyon-calendar-reminders.desktop autostart/halcyon-notes.desktop plasma_workspace.notifyrc mimeapps.list \
+             fastfetch/config.jsonc autostart/halcyon-yakuake.desktop autostart/halcyon-autoplay.desktop autostart/halcyon-screensaver.desktop autostart/halcyon-osk.desktop autostart/halcyon-gadgets.desktop autostart/halcyon-welcome.desktop autostart/halcyon-calendar-reminders.desktop autostart/halcyon-notes.desktop autostart/halcyon-session-update.desktop plasma_workspace.notifyrc mimeapps.list \
              plasma-workspace/env/halcyon-shortcuts.sh; do
         install -Dm644 "$startdir/etc/xdg/$f" "$pkgdir/etc/xdg/$f"
     done
@@ -124,7 +124,7 @@ package() {
 
     # Tools, os-release branding, desktop package list
     for f in halcyon-install halcyon-mode halcyon-keys halcyon-gaming halcyon-dev \
-             halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-update \
+             halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-colors halcyon-update \
              halcyon-games halcyon-osk halcyon-gadgets halcyon-messenger halcyon-mediacenter \
              halcyon-navigator halcyon-welcome halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
         install -Dm755 "$startdir/bin/$f" "$pkgdir/usr/bin/$f"
@@ -133,6 +133,7 @@ package() {
     install -Dm755 "$startdir/lib/gaming-install" "$pkgdir/usr/lib/halcyon/gaming-install"
     install -Dm755 "$startdir/lib/apply-shortcuts" "$pkgdir/usr/lib/halcyon/apply-shortcuts"
     install -Dm755 "$startdir/lib/autoplay-daemon" "$pkgdir/usr/lib/halcyon/autoplay-daemon"
+    install -Dm755 "$startdir/lib/session-update" "$pkgdir/usr/lib/halcyon/session-update"
     install -Dm644 "$startdir/lib/disc-lib.sh" "$pkgdir/usr/lib/halcyon/disc-lib.sh"
 
     # Media player
