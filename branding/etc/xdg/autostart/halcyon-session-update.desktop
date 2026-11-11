@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Halcyon session update
+Comment=Keeps your desktop in step with Halcyon updates (window color, taskbar)
+Exec=/usr/lib/halcyon/session-update
+NoDisplay=true
+X-KDE-autostart-phase=2

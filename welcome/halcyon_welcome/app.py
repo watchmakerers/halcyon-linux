@@ -194,7 +194,8 @@ def tasks():
          [("Classic Aero", ["halcyon-mode", "classic"]), ("Tiling", ["halcyon-mode", "tiling"])], "start"),
         ("personalize", "preferences-desktop-wallpaper", "Personalize Halcyon",
          "Change the desktop background, colors, and the Windows 7 or Vista look of the windows.",
-         [("Desktop background", ["systemsettings", "kcm_wallpaper"]), ("Window look", ["halcyon-wintheme"])],
+         [("Desktop background", ["systemsettings", "kcm_wallpaper"]), ("Window color", ["halcyon-colors"]),
+          ("Windows themes", ["halcyon-wintheme"])],
          "start"),
         ("gaming", "input-gaming", "Set up gaming",
          "Install Steam, Wine for Windows games, Lutris, Heroic, MangoHud, GameMode, the NVIDIA driver and "

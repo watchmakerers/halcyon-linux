@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Window Color: recolour Halcyon's glass (taskbar, Start menu, window borders,
+# highlights) with a built-in colour or any colour you pick.
+set -uo pipefail
+PY="python3 /usr/share/halcyon/wintheme.py"
+title="Window Color"
+
+current=$(kreadconfig6 --file halcyonrc --group Colors --key tint)
+[[ -n $current ]] || current="#1e9be0"
+items=() known=0
+while IFS=$'\t' read -r id name color; do
+    state=off
+    [[ ${color,,} == "${current,,}" ]] && { state=on; known=1; }
+    [[ $id == sky ]] && name+="  (Halcyon default)"
+    items+=("$color" "$name" "$state")
+done < <($PY presets)
+custom=off; ((known)) || custom=on
+items+=(custom "Custom color…" "$custom")
+
+pick=$(kdialog --title "$title" --icon preferences-desktop-color --geometry 420x560 \
+    --radiolist "Choose the color of windows, the Start menu and the taskbar:" "${items[@]}") || exit 0
+if [[ $pick == custom ]]; then
+    pick=$(kdialog --title "$title" --getcolor --default "$current") || exit 0
+fi
+[[ $pick =~ ^#[0-9a-fA-F]{6}$ ]] || exit 0
+
+# Recolouring rewrites the theme files and restarts the desktop shell (a second or two).
+if out=$(QT_QPA_PLATFORM=offscreen $PY color "$pick" 2>&1); then
+    kdialog --title "$title" --passivepopup "Window color changed." 3
+else
+    kdialog --title "$title" --error "Couldn't change the color:\n\n${out: -400}"
+fi

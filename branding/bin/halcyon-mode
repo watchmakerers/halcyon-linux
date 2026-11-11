@@ -2,7 +2,7 @@
 # Switch the running Plasma session between Halcyon's two desktop modes,
 # live, without logging out.
 #
-#   halcyon-mode classic   floating glass windows, taskbar at the bottom
+#   halcyon-mode classic   floating glass windows, taskbar docked along the bottom
 #   halcyon-mode tiling    Hyprland-style: auto-tiling, gaps, borderless
 #                          windows with a glowing edge, slim bar on top
 #   halcyon-mode toggle    switch to the other one
@@ -65,6 +65,16 @@ set_desktops() {  # set_desktops N: grow/shrink virtual desktops to N
     fi
 }
 
+# Window border for a mode, recoloured if a window color is in use (halcyon-colors).
+deco() {
+    if [[ -d ${XDG_DATA_HOME:-$HOME/.local/share}/aurorae/themes/${1}Tinted ]] &&
+       [[ $(kreadconfig6 --file plasmarc --group Theme --key name) == Halcyon-Tinted ]]; then
+        echo "__aurorae__svg__${1}Tinted"
+    else
+        echo "__aurorae__svg__$1"
+    fi
+}
+
 tiling() {
     cfg --file halcyonrc --group Mode --key current tiling
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled true
@@ -74,7 +84,7 @@ tiling() {
     cfg --file kwinrc --group Script-krohnkite --key screenGapRight 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapBetween 8
     cfg --file kwinrc --group Script-krohnkite --key soleWindowNoGaps false
-    cfg --file kwinrc --group org.kde.kdecoration2 --key theme __aurorae__svg__HalcyonAeroSlim
+    cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAeroSlim)"
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft ""
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
@@ -96,12 +106,12 @@ classic() {
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:krohnkite >/dev/null || true
     # Krohnkite puts tiled windows on the keep-below layer; give them back their normal stacking.
     kwin_js "workspace.windowList().forEach(function (w) { if (w.normalWindow && w.keepBelow) w.keepBelow = false; });" || true
-    cfg --file kwinrc --group org.kde.kdecoration2 --key theme __aurorae__svg__HalcyonAero
+    cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAero)"
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft M
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight IAX
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
     set_desktops 4
-    plasma_js "panels().forEach(function (p) { p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = true; p.hiding = 'none'; })"
+    plasma_js "panels().forEach(function (p) { p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = false; p.lengthMode = 'fill'; p.hiding = 'none'; })"
     notify "Classic mode"
 }
 

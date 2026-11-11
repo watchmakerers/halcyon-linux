@@ -2,7 +2,8 @@
 var panel = new Panel;
 panel.location = "bottom";
 panel.height = Math.round(gridUnit * 2.1);
-panel.floating = true;  // detached + all four corners rounded
+panel.floating = false;  // docked: fills the whole bottom edge
+panel.lengthMode = "fill";
 
 var start = panel.addWidget("org.halcyon.startmenu");  // Vista-style Start orb + menu
 start.currentConfigGroup = ["General"];

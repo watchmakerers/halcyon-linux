@@ -4,6 +4,9 @@
     wintheme.py list                       themes installed in Halcyon's Windows prefix
     wintheme.py apply FILE.theme [--no-wallpaper] [--no-cursors] [--no-sounds] [--no-colors]
     wintheme.py restore                    back to Halcyon's own colours
+    wintheme.py presets                    the built-in window colours (id, name, colour)
+    wintheme.py color PRESET|#rrggbb       recolour Halcyon (taskbar, menus, windows)
+    wintheme.py refresh                    re-make the recoloured copies if Halcyon was updated
 
 Wallpaper -> Plasma wallpaper; .cur/.ani cursors -> an Xcursor theme
 (animated cursors stay animated); system sounds -> Plasma notification
@@ -235,33 +238,59 @@ SYS = os.environ.get("HALCYON_SHARE", "/usr/share")   # override for tests
 TINTED = {
     "desktoptheme": ("plasma/desktoptheme/Halcyon", "plasma/desktoptheme/Halcyon-Tinted"),
     "aurorae": ("aurorae/themes/HalcyonAero", "aurorae/themes/HalcyonAeroTinted"),
+    "aurorae-slim": ("aurorae/themes/HalcyonAeroSlim", "aurorae/themes/HalcyonAeroSlimTinted"),
     "colors": ("color-schemes/HalcyonAero.colors", "color-schemes/HalcyonAeroTinted.colors"),
     "orbs": ("plasma/plasmoids/org.halcyon.workspaces", "plasma/plasmoids/org.halcyon.workspaces"),
 }
 
 
-def _tint_rgb(r, g, b, dh, sat):
+# Built-in window colours, after Vista/7's "Window Color and Appearance".
+# Lightness counts too: Twilight and Chocolate are darker glass, Frost lighter.
+PRESETS = [
+    ("sky", "Sky", "#1e9be0"),             # Halcyon's own
+    ("twilight", "Twilight", "#1d4f9c"),
+    ("sea", "Sea", "#15a39a"),
+    ("leaf", "Leaf", "#3f9d32"),
+    ("lime", "Lime", "#8cc63a"),
+    ("sun", "Sun", "#e6b81e"),
+    ("pumpkin", "Pumpkin", "#ef7a1a"),
+    ("ruby", "Ruby", "#c4212b"),
+    ("fuchsia", "Fuchsia", "#cf2f98"),
+    ("blush", "Blush", "#ea86b6"),
+    ("violet", "Violet", "#7b3fc4"),
+    ("lavender", "Lavender", "#a58fdc"),
+    ("taupe", "Taupe", "#9c8a76"),
+    ("chocolate", "Chocolate", "#6b3d20"),
+    ("slate", "Slate", "#56677a"),
+    ("graphite", "Graphite", "#4a4f55"),
+    ("frost", "Frost", "#c9dbe8"),
+]
+BASE_LIGHT = 0.498                     # lightness of Halcyon's blue, #1e9be0
+
+
+def _tint_rgb(r, g, b, dh, sat, gamma=1.0):
     import colorsys
     h, l, s_ = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     if s_ < 0.06:                       # greys (text, shadows) stay grey
         return r, g, b
     h = (h + dh / 360.0) % 1.0
     s_ = max(0.0, min(1.0, s_ * sat))
+    l = l ** gamma                      # keeps white sheen and black edges, moves the midtones
     r2, g2, b2 = colorsys.hls_to_rgb(h, l, s_)
     return round(r2 * 255), round(g2 * 255), round(b2 * 255)
 
 
-def tint_text(text, dh, sat):
+def tint_text(text, dh, sat, gamma=1.0):
     """Recolour #rrggbb, #aarrggbb and 'r,g,b' triplets in a text file."""
     def hex6(m):
         r, g, b = (int(m.group(1)[i:i + 2], 16) for i in (0, 2, 4))
-        return "#%02x%02x%02x" % _tint_rgb(r, g, b, dh, sat)
+        return "#%02x%02x%02x" % _tint_rgb(r, g, b, dh, sat, gamma)
     def hex8(m):
         a = m.group(1)
         r, g, b = (int(m.group(2)[i:i + 2], 16) for i in (0, 2, 4))
-        return "#%s%02x%02x%02x" % (a, *_tint_rgb(r, g, b, dh, sat))
+        return "#%s%02x%02x%02x" % (a, *_tint_rgb(r, g, b, dh, sat, gamma))
     def trip(m):
-        return "%s=%d,%d,%d" % (m.group(1), *_tint_rgb(*(int(x) for x in m.group(2, 3, 4)), dh, sat))
+        return "%s=%d,%d,%d" % (m.group(1), *_tint_rgb(*(int(x) for x in m.group(2, 3, 4)), dh, sat, gamma))
     text = re.sub(r'#([0-9a-fA-F]{2})([0-9a-fA-F]{6})(?![0-9a-fA-F])', hex8, text)
     text = re.sub(r'#([0-9a-fA-F]{6})(?![0-9a-fA-F])', hex6, text)
     return re.sub(r'^(\w+)=(\d{1,3}),(\d{1,3}),(\d{1,3})(?=,|$)', trip, text, flags=re.M)
@@ -298,12 +327,18 @@ def theme_color(ini, lower, theme_dir, wallpaper_path):
     return None
 
 
-def tint_halcyon(rgb):
-    """Write hue-shifted copies of Halcyon's chrome to ~/.local/share and use them."""
+def tint_halcyon(rgb, light=False, restart_shell=True):
+    """Write hue-shifted copies of Halcyon's chrome to ~/.local/share and use them.
+
+    light: follow the colour's lightness too (the presets); Windows themes
+    only lend their hue, so their glass keeps Halcyon's brightness."""
     import colorsys
+    import math
     h, l, s_ = colorsys.rgb_to_hls(*(v / 255 for v in rgb))
     dh = h * 360 - BASE_HUE
     sat = 0.15 if s_ < 0.12 else min(1.25, 0.45 + s_)      # colourless themes: grey glass
+    # Lighter glass is capped so white text on highlights stays readable.
+    gamma = max(0.8, min(1.8, math.log(max(l, 0.05)) / math.log(BASE_LIGHT))) if light else 1.0
     for kind, (src, dst) in TINTED.items():
         src, dst = os.path.join(SYS, src), os.path.join(DATA, dst)
         if not os.path.exists(src):
@@ -319,7 +354,7 @@ def tint_halcyon(rgb):
         for f in files:
             if f.endswith((".svg", ".qml", ".colors", "rc", "colors")) or os.path.basename(f) == "colors":
                 with open(f, encoding="utf-8") as fh:
-                    text = tint_text(fh.read(), dh, sat)
+                    text = tint_text(fh.read(), dh, sat, gamma)
                 with open(f, "w", encoding="utf-8") as fh:
                     fh.write(text)
     # Give the copies their own names so Plasma treats them as separate themes.
@@ -330,15 +365,18 @@ def tint_halcyon(rgb):
             text = f.read().replace('"Id": "Halcyon"', '"Id": "Halcyon-Tinted"').replace('"Name": "Halcyon"', '"Name": "Halcyon (tinted)"')
         with open(meta, "w") as f:
             f.write(text)
-    au = os.path.join(DATA, TINTED["aurorae"][1])
-    if os.path.exists(os.path.join(au, "HalcyonAerorc")):
-        os.rename(os.path.join(au, "HalcyonAerorc"), os.path.join(au, "HalcyonAeroTintedrc"))
+    for kind in ("aurorae", "aurorae-slim"):
+        old = os.path.basename(TINTED[kind][0])            # HalcyonAero / HalcyonAeroSlim
+        au = os.path.join(DATA, TINTED[kind][1])
+        if os.path.exists(os.path.join(au, old + "rc")):
+            os.rename(os.path.join(au, old + "rc"), os.path.join(au, old + "Tintedrc"))
         md = os.path.join(au, "metadata.desktop")
-        with open(md) as f:
-            text = f.read().replace("Name=Halcyon Aero", "Name=Halcyon Aero (tinted)").replace(
-                "X-KDE-PluginInfo-Name=HalcyonAero", "X-KDE-PluginInfo-Name=HalcyonAeroTinted")
-        with open(md, "w") as f:
-            f.write(text)
+        if os.path.exists(md):
+            with open(md) as f:
+                text = re.sub(r"^(Name=.*)$", r"\1 (tinted)", f.read(), count=1, flags=re.M)
+                text = text.replace(f"X-KDE-PluginInfo-Name={old}\n", f"X-KDE-PluginInfo-Name={old}Tinted\n")
+            with open(md, "w") as f:
+                f.write(text)
     cs = os.path.join(DATA, TINTED["colors"][1])
     if os.path.exists(cs):
         with open(cs) as f:
@@ -346,15 +384,36 @@ def tint_halcyon(rgb):
                 "Name=Halcyon Aero", "Name=Halcyon Aero (tinted)")
         with open(cs, "w") as f:
             f.write(text)
-    use_chrome("Halcyon-Tinted", "__aurorae__svg__HalcyonAeroTinted", "HalcyonAeroTinted")
+    save_tint("#%02x%02x%02x" % tuple(rgb), light)
+    use_chrome("Halcyon-Tinted", "HalcyonAeroTinted", restart_shell)
     return dh, sat
 
 
-def use_chrome(desktop_theme, decoration, colors, restart_shell=True):
+def _run(*a):
+    return subprocess.run(list(a), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+
+
+def save_tint(color, light):
+    """Remember the colour in halcyonrc, so updates can re-make the copies."""
+    _run("kwriteconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "tint", color)
+    _run("kwriteconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "light", "true" if light else "false")
+
+
+def decoration(tinted):
+    """Window border for the current desktop mode (tiling uses the slim one)."""
+    mode = _run("kreadconfig6", "--file", "halcyonrc", "--group", "Mode", "--key", "current").stdout.strip()
+    name = "HalcyonAeroSlim" if mode == "tiling" else "HalcyonAero"
+    if tinted and os.path.isdir(os.path.join(DATA, "aurorae/themes", name + "Tinted")):
+        name += "Tinted"
+    return "__aurorae__svg__" + name
+
+
+def use_chrome(desktop_theme, colors, restart_shell=True):
     run = lambda *a: subprocess.run(list(a), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     run("plasma-apply-desktoptheme", desktop_theme)
     run("plasma-apply-colorscheme", colors)
-    run("kwriteconfig6", "--file", "kwinrc", "--group", "org.kde.kdecoration2", "--key", "theme", decoration)
+    run("kwriteconfig6", "--file", "kwinrc", "--group", "org.kde.kdecoration2", "--key", "theme",
+        decoration(desktop_theme.endswith("-Tinted")))
     run("dbus-send", "--session", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
     if restart_shell:      # the workspace orbs read their colours at start
         run("systemctl", "--user", "restart", "plasma-plasmashell.service")
@@ -367,7 +426,34 @@ def restore_halcyon():
             shutil.rmtree(path, ignore_errors=True)
         elif os.path.exists(path):
             os.remove(path)
-    use_chrome("Halcyon", "__aurorae__svg__HalcyonAero", "HalcyonAero")
+    _run("kwriteconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "tint", "--delete")
+    _run("kwriteconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "light", "--delete")
+    use_chrome("Halcyon", "HalcyonAero")
+
+
+def set_color(spec):
+    """Recolour Halcyon with a preset id/name or a #rrggbb colour."""
+    hexc = next((c for i, n, c in PRESETS if spec.lower() in (i, n.lower())), spec)
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", hexc):
+        raise SystemExit(f"Unknown colour: {spec} (use a preset id or #rrggbb)")
+    if hexc.lower() == PRESETS[0][2]:          # Sky is Halcyon's own look
+        restore_halcyon()
+        return
+    tint_halcyon(tuple(int(hexc[i:i + 2], 16) for i in (1, 3, 5)), light=True)
+
+
+def refresh():
+    """After a Halcyon update the recoloured copies are stale: make them again."""
+    color = _run("kreadconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "tint").stdout.strip()
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+        return
+    stamp = lambda p: os.path.getmtime(p) if os.path.exists(p) else 0
+    sys_meta = os.path.join(SYS, TINTED["desktoptheme"][0], "metadata.json")
+    own_meta = os.path.join(DATA, TINTED["desktoptheme"][1], "metadata.json")
+    if stamp(own_meta) >= stamp(sys_meta):
+        return
+    light = _run("kreadconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "light").stdout.strip() == "true"
+    tint_halcyon(tuple(int(color[i:i + 2], 16) for i in (1, 3, 5)), light=light)
 
 
 # ------------------------------------------------------------------ apply ---
@@ -445,6 +531,13 @@ if __name__ == "__main__":
         print(r)
     elif len(sys.argv) >= 2 and sys.argv[1] == "restore":
         restore_halcyon()
+    elif len(sys.argv) >= 2 and sys.argv[1] == "presets":
+        for i, n, c in PRESETS:
+            print(f"{i}\t{n}\t{c}")
+    elif len(sys.argv) >= 3 and sys.argv[1] == "color":
+        set_color(sys.argv[2])
+    elif len(sys.argv) >= 2 and sys.argv[1] == "refresh":
+        refresh()
     else:
         print(__doc__)
         sys.exit(2)

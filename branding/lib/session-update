@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Runs at each login (autostart): brings an existing desktop up to date with
+# changes a Halcyon update can't make from its root-run install script.
+set -uo pipefail
+
+# Window color: re-make the recoloured theme copies if Halcyon's theme changed.
+python3 /usr/share/halcyon/wintheme.py refresh
+
+# One-time changes, in order. Each is stamped in halcyonrc so it runs once.
+done_ver=$(kreadconfig6 --file halcyonrc --group Migrations --key done --default 0)
+
+if (( done_ver < 1 )); then
+    # 2026.11: the classic taskbar is docked along the whole bottom edge instead of floating.
+    mode=$(kreadconfig6 --file halcyonrc --group Mode --key current)
+    if [[ $mode != tiling ]]; then
+        # plasmashell may still be starting: retry for a few seconds.
+        for _ in {1..20}; do
+            dbus-send --session --print-reply=literal --dest=org.kde.plasmashell /PlasmaShell \
+                org.kde.PlasmaShell.evaluateScript \
+                "string:panels().forEach(function (p) { if (p.location == 'bottom') { p.floating = false; p.lengthMode = 'fill'; } })" \
+                >/dev/null 2>&1 && break
+            sleep 0.5
+        done
+    fi
+    kwriteconfig6 --file halcyonrc --group Migrations --key done 1
+fi

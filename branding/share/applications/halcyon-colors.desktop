@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Window Color
+Comment=Change the color of windows, the Start menu and the taskbar
+Exec=halcyon-colors
+Icon=preferences-desktop-color
+Categories=Settings;DesktopSettings;
+Keywords=color;colour;theme;accent;glass;aero;tint;appearance;
