@@ -117,10 +117,18 @@ sed -i -e '/^\[core\]$/i [cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n
 install -Dm644 "$PROFILE/pacman.conf" "$air/etc/pacman.conf"
 echo halcyon > "$air/etc/hostname"
 
-# Build-only: the build keyring, and CachyOS mirrors from this repo since the
-# host has no /etc/pacman.d/cachyos-mirrorlist.
+# Build-only: the build keyring, CachyOS mirrors from this repo since the host
+# has no /etc/pacman.d/cachyos-mirrorlist, and current Arch mirrors instead of
+# the host's list. The host's may be a frozen snapshot (Omarchy's
+# stable-mirror is), which falls out of step with CachyOS's always-current repo.
+cat > "$WORK/arch-mirrorlist" <<'EOF'
+Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://fastly.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
+EOF
 sed -i -e "/^\[options\]/a GPGDir = $KEYRING" \
-       -e "s|/etc/pacman.d/cachyos-mirrorlist|$HERE/cachyos/cachyos-mirrorlist|" "$PROFILE/pacman.conf"
+       -e "s|/etc/pacman.d/cachyos-mirrorlist|$HERE/cachyos/cachyos-mirrorlist|" \
+       -e "s|^Include = /etc/pacman.d/mirrorlist$|Include = $WORK/arch-mirrorlist|" "$PROFILE/pacman.conf"
 
 # Local repo with the branding package
 cat >> "$PROFILE/pacman.conf" <<EOF
