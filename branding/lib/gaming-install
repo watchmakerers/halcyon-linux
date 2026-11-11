@@ -11,6 +11,8 @@ set -e
 user=$(id -nu "${PKEXEC_UID:-${SUDO_UID:-1000}}")
 gpu=$(lspci -nn | grep -Ei 'vga|3d|display' || true)
 has() { grep -qi "$1" <<<"$gpu"; }
+# CachyOS-based Halcyon (or an older, plain-Arch one?)
+cachy=0; grep -q '^\[cachyos\]' /etc/pacman.conf && cachy=1
 
 pkgs=() flatpaks=()
 for want_id in "$@"; do
@@ -22,7 +24,12 @@ for want_id in "$@"; do
             has 1002 && pkgs+=(vulkan-radeon lib32-vulkan-radeon)
             has 8086 && pkgs+=(vulkan-intel lib32-vulkan-intel intel-media-driver)
             if has 10de; then
-                if [[ " $* " == *" zen "* ]]; then pkgs+=(nvidia-open-dkms linux-zen-headers)
+                if ((cachy)); then
+                    # CachyOS ships prebuilt modules per kernel: linux-cachyos-nvidia-open...
+                    for k in $(pacman -Qq | grep -E '^linux-cachyos(-[a-z0-9]+)?$' | grep -Ev -- '-(headers|nvidia|zfs)'); do
+                        pkgs+=("$k-nvidia-open")
+                    done
+                elif [[ " $* " == *" zen "* ]]; then pkgs+=(nvidia-open-dkms linux-zen-headers)
                 else pkgs+=(nvidia-open); fi
                 pkgs+=(nvidia-utils lib32-nvidia-utils nvidia-settings libva-nvidia-driver)
             fi
@@ -43,6 +50,7 @@ for want_id in "$@"; do
         vesktop)   flatpaks+=(dev.vencord.Vesktop) ;;
         prism)     pkgs+=(prismlauncher) ;;
         zen)       pkgs+=(linux-zen linux-zen-headers) ;;
+        proton)    pkgs+=(proton-cachyos-slr) ;;
         heroic)    flatpaks+=(com.heroicgameslauncher.hgl) ;;
         protonup)  flatpaks+=(net.davidotek.pupgui2) ;;
         *) echo "unknown component: $want_id" ;;

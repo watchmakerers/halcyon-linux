@@ -59,6 +59,21 @@ if [[ ${1:-} == --clean ]]; then
 fi
 mkdir -p "$WORK/sources" "$OUT"
 
+# ------------------------------------------------------ signing keys ---
+# The ISO installs from CachyOS's repos, so pacman needs their signing key.
+# It goes into a keyring just for the build (GPGDir below); this computer's
+# own pacman keyring is left alone.
+KEYRING=$WORK/gnupg
+CACHY_KEY=882DCFE48E2051D48E2562ABF3B607488DB35A47
+if ! sudo pacman-key --gpgdir "$KEYRING" --list-keys "$CACHY_KEY" &>/dev/null; then
+    msg "Preparing the build keyring (Arch + CachyOS keys)"
+    sudo rm -rf --one-file-system -- "$KEYRING"
+    sudo pacman-key --gpgdir "$KEYRING" --init
+    sudo pacman-key --gpgdir "$KEYRING" --populate archlinux
+    sudo pacman-key --gpgdir "$KEYRING" --add "$HERE/cachyos/cachyos.gpg"
+    sudo pacman-key --gpgdir "$KEYRING" --lsign-key "$CACHY_KEY"
+fi
+
 # ---------------------------------------------------- branding package ---
 msg "Building halcyon-branding package"
 rm -rf "$REPO" && mkdir -p "$REPO"
@@ -91,10 +106,21 @@ sed -i "s/'uefi.systemd-boot'/'uefi.grub'/" "$PROFILE/profiledef.sh"
 # developer files, here and on installed systems, so updates stay lean too.
 noextract='NoExtract = usr/share/locale/* usr/share/doc/* usr/share/man/* usr/share/gir-1.0/* usr/share/qt6/translations/* !usr/share/locale/en/* !usr/share/locale/en_US/* !usr/share/locale/en_GB/* !usr/share/locale/locale.alias'
 sed -i "/^\[options\]/a $noextract" "$PROFILE/pacman.conf"
-# The live/installed system gets the same plain Arch config (before the local
-# build repo is added below); pacman leaves an existing /etc/pacman.conf alone.
+# CachyOS on top of Arch: [cachyos] goes above [core] so its builds (kernel,
+# pacman, mesa, gaming bits) win, and [multilib] is on for 32-bit game libs.
+# This is the baseline x86-64 repo; halcyon-install adds the v3/v4/Zen 4
+# repos the installed machine's CPU can run.
+sed -i -e '/^\[core\]$/i [cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n' \
+       -e '/^#\[multilib\]$/,/^#Include/ s/^#//' "$PROFILE/pacman.conf"
+# The live/installed system gets the same config (before the build-only bits
+# below); pacman leaves an existing /etc/pacman.conf alone.
 install -Dm644 "$PROFILE/pacman.conf" "$air/etc/pacman.conf"
 echo halcyon > "$air/etc/hostname"
+
+# Build-only: the build keyring, and CachyOS mirrors from this repo since the
+# host has no /etc/pacman.d/cachyos-mirrorlist.
+sed -i -e "/^\[options\]/a GPGDir = $KEYRING" \
+       -e "s|/etc/pacman.d/cachyos-mirrorlist|$HERE/cachyos/cachyos-mirrorlist|" "$PROFILE/pacman.conf"
 
 # Local repo with the branding package
 cat >> "$PROFILE/pacman.conf" <<EOF
@@ -107,8 +133,22 @@ EOF
 # Packages: releng base minus server-ish bits, plus the desktop
 sed -i -E '/^(cloud-init|iwd|irssi|lftp|lynx|mc|vpnc|wvdial|xl2tpd|pptpclient|clonezilla|partimage|darkhttpd)$/d' \
     "$PROFILE/packages.x86_64"
-{ echo; grep -Ev '^\s*(#|$)' "$HERE/branding/desktop-packages.txt"; echo halcyon-branding; } \
+# CachyOS kernel instead of Arch's (broadcom-wl is built against Arch's
+# 'linux' and would pull it back in).
+sed -i -E -e 's/^linux$/linux-cachyos/' -e '/^broadcom-wl$/d' "$PROFILE/packages.x86_64"
+{ echo; grep -hEv '^\s*(#|$)' "$HERE/cachyos/packages.txt" "$HERE/branding/desktop-packages.txt"; echo halcyon-branding; } \
     >> "$PROFILE/packages.x86_64"
+
+# archiso's boot entries name the kernel 'linux'. (Older archiso also shipped
+# its own linux.preset; newer ones use the kernel package's default preset,
+# which mkinitcpio generates for linux-cachyos just the same.)
+kfiles=("$PROFILE"/syslinux/*.cfg "$PROFILE"/efiboot/loader/entries/*.conf "$PROFILE"/grub/*.cfg)
+if [[ -f $air/etc/mkinitcpio.d/linux.preset ]]; then
+    mv "$air/etc/mkinitcpio.d/linux.preset" "$air/etc/mkinitcpio.d/linux-cachyos.preset"
+    kfiles+=("$air/etc/mkinitcpio.d/linux-cachyos.preset")
+fi
+sed -i -E -e 's/vmlinuz-linux\b/vmlinuz-linux-cachyos/g' -e 's/initramfs-linux\.img/initramfs-linux-cachyos.img/g' \
+    -e "s/'linux' package/'linux-cachyos' package/" "${kfiles[@]}"
 
 # Services: NetworkManager + SDDM instead of networkd/iwd; graphical boot
 wants=$air/etc/systemd/system
@@ -120,6 +160,8 @@ rm -rf "$wants"/cloud-init.target.wants "$wants"/getty@tty1.service.d
 ln -sf /usr/lib/systemd/system/NetworkManager.service "$wants/multi-user.target.wants/NetworkManager.service"
 ln -sf /usr/lib/systemd/system/NetworkManager-dispatcher.service "$wants/dbus-org.freedesktop.nm-dispatcher.service"
 ln -sf /usr/lib/systemd/system/sddm.service "$wants/display-manager.service"
+# CachyOS process priorities (games and the desktop over background work)
+ln -sf /usr/lib/systemd/system/ananicy-cpp.service "$wants/multi-user.target.wants/ananicy-cpp.service"
 ln -sf /usr/lib/systemd/system/graphical.target "$wants/default.target"
 
 # Overlay our live-session files (live user, autologin, installer icon)

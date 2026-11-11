@@ -109,6 +109,23 @@ ENCRYPT=no
 read -rp "  Encrypt the disk with your password? [y/N] " a
 [[ ${a,,} == y* ]] && ENCRYPT=yes
 
+# CachyOS builds of most packages for newer CPUs. The live image uses the
+# baseline x86-64 builds so it boots anywhere; the installed system gets the
+# best repo set this CPU runs (same choice as CachyOS's own cachyos-repo.sh).
+cpu_isa() { /usr/lib/ld-linux-x86-64.so.2 --help 2>/dev/null | grep -q "$1 (supported, searched)"; }
+cpu_family=$(awk -F': *' '/^cpu family/ {print $2; exit}' /proc/cpuinfo)
+CPU_REPO=""
+if grep -q '^vendor_id.*AuthenticAMD' /proc/cpuinfo && cpu_isa x86-64-v4 && (( cpu_family >= 25 )); then
+    CPU_REPO=znver4      # Zen 4 / Zen 5 (Zen 3 is family 25 too, but has no AVX-512)
+elif cpu_isa x86-64-v4; then CPU_REPO=v4
+elif cpu_isa x86-64-v3; then CPU_REPO=v3
+fi
+OPTIMIZE=no
+if [[ -n $CPU_REPO ]] && curl -fsI --max-time 5 https://cdn77.cachyos.org/ >/dev/null 2>&1; then
+    read -rp "  Download packages optimized for your CPU ($CPU_REPO, about 1-2 GB)? [Y/n] " a
+    [[ ${a,,} == n* ]] || OPTIMIZE=yes
+fi
+
 cat <<EOF
 
   ${b}Ready to install:${r}
@@ -117,6 +134,7 @@ cat <<EOF
     Timezone  $TIMEZONE · keyboard $KEYMAP
     Disk      $pick
     Encrypted $ENCRYPT
+    CPU repos ${CPU_REPO:-x86-64 (baseline)}$([[ $OPTIMIZE == yes ]] && echo " · download now")
 
   ${red}${b}All data on $DISK will be erased.${r}
 EOF
@@ -178,9 +196,16 @@ unsquashfs -f -p "$(nproc)" -d "$TARGET" "$SFS" 2>>"$LOG" | stdbuf -o0 tr "\r" "
     while read -r pct; do printf '\r  %s%s%s copied ' "$c" "$pct" "$r"; done ||
     die "Copying the system failed."
 printf '\r%*s\r' 30 ''
-vmlinuz=$(ls "$TARGET"/usr/lib/modules/*/vmlinuz 2>/dev/null | head -1 || true)
-[[ -f $vmlinuz ]] || die "No kernel found in the system image."
-cp "$vmlinuz" "$TARGET/boot/vmlinuz-linux"
+# The kernel package's name (linux-cachyos) names its files in /boot, the
+# same way pacman's mkinitcpio hook will name them on every kernel update.
+KERNEL="" vmlinuz=""
+for kdir in "$TARGET"/usr/lib/modules/*/; do
+    [[ -f $kdir/vmlinuz && -f $kdir/pkgbase ]] || continue
+    KERNEL=$(<"$kdir/pkgbase") vmlinuz=$kdir/vmlinuz
+    break
+done
+[[ -n $KERNEL ]] || die "No kernel found in the system image."
+cp "$vmlinuz" "$TARGET/boot/vmlinuz-$KERNEL"
 ok "System copied"
 
 # ------------------------------------------------------- live -> installed ---
@@ -231,20 +256,57 @@ ok "User $USERNAME"
 
 # Package keys (the live system kept these on a throwaway tmpfs)
 ch pacman-key --init
-ch pacman-key --populate archlinux
+ch pacman-key --populate archlinux cachyos
 ok "Package signing keys"
 
-# fstab + swap in RAM
-genfstab -U "$TARGET" > "$TARGET/etc/fstab"
-printf '[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd\n' > "$TARGET/etc/systemd/zram-generator.conf"
+# CPU-optimized CachyOS repos above the baseline [cachyos] one
+# (Architecture = auto lets CachyOS's pacman accept x86_64_v3/v4 packages).
+if [[ -n $CPU_REPO ]]; then
+    case $CPU_REPO in
+        v3) repos=(cachyos-v3 cachyos-core-v3 cachyos-extra-v3) list=cachyos-v3-mirrorlist ;;
+        v4) repos=(cachyos-v4 cachyos-core-v4 cachyos-extra-v4) list=cachyos-v4-mirrorlist ;;
+        znver4) repos=(cachyos-znver4 cachyos-core-znver4 cachyos-extra-znver4) list=cachyos-v4-mirrorlist ;;
+    esac
+    block=""
+    for rp in "${repos[@]}"; do block+="[$rp]\nInclude = /etc/pacman.d/$list\n\n"; done
+    sed -i -e "/^\[cachyos\]$/i $block" -e 's/^Architecture = .*/Architecture = auto/' "$TARGET/etc/pacman.conf"
+    ok "CachyOS $CPU_REPO repos"
+fi
 
-# initramfs (systemd-based, Plymouth splash, unlock prompt when encrypted)
+# fstab. Swap in RAM (zram) comes from cachyos-settings, tuned to go with its sysctls.
+genfstab -U "$TARGET" > "$TARGET/etc/fstab"
+
+# initramfs (systemd-based, Plymouth splash, unlock prompt when encrypted).
+# The live image's archiso preset is replaced by a normal one so kernel
+# updates rebuild the right image.
 enc_hook=""; [[ $ENCRYPT == yes ]] && enc_hook=sd-encrypt
 cat > "$TARGET/etc/mkinitcpio.conf.d/halcyon.conf" <<EOF
 HOOKS=(base systemd plymouth autodetect microcode modconf kms keyboard sd-vconsole block $enc_hook filesystems fsck)
 EOF
-ch mkinitcpio -k /boot/vmlinuz-linux -g /boot/initramfs-linux.img
+rm -f "$TARGET"/etc/mkinitcpio.d/*.preset
+cat > "$TARGET/etc/mkinitcpio.d/$KERNEL.preset" <<EOF
+# mkinitcpio preset file for the '$KERNEL' package
+PRESETS=('default')
+ALL_kver="/boot/vmlinuz-$KERNEL"
+default_image="/boot/initramfs-$KERNEL.img"
+EOF
+ch mkinitcpio -p "$KERNEL"
 ok "Boot image"
+
+# Swap the baseline builds for this CPU's. Optional: if it fails (or was
+# skipped) the system works as is and moves over with later updates.
+if [[ $OPTIMIZE == yes ]]; then
+    step "Downloading packages optimized for your CPU"
+    printf '  %sThis can take a while on a slow connection.%s\n' "$d" "$r"
+    if arch-chroot "$TARGET" pacman -Syy >>"$LOG" 2>&1 &&
+       mapfile -t opt < <(arch-chroot "$TARGET" bash -c \
+           "comm -12 <(pacman -Qq | sort) <(pacman -Slq ${repos[*]} | sort -u)" 2>>"$LOG") &&
+       arch-chroot "$TARGET" pacman -Syu --noconfirm "${opt[@]}" >>"$LOG" 2>&1; then
+        ok "Optimized ${#opt[@]} packages"
+    else
+        printf '  %s!%s Couldn'"'"'t download them now; updates will bring them in.\n' "$y" "$r"
+    fi
+fi
 
 # ------------------------------------------------------------ bootloader ---
 ROOT_UUID=$(blkid -s UUID -o value "$ROOTDEV")
@@ -259,9 +321,9 @@ interface_branding_colour: 1e9be0
 
 /Halcyon Linux
     protocol: linux
-    path: boot():/vmlinuz-linux
+    path: boot():/vmlinuz-$KERNEL
     cmdline: $cmdline
-    module_path: boot():/initramfs-linux.img
+    module_path: boot():/initramfs-$KERNEL.img
 EOF
 mkdir -p "$TARGET/boot/EFI/BOOT" "$TARGET/boot/EFI/limine"
 cp /usr/share/limine/BOOTX64.EFI "$TARGET/boot/EFI/BOOT/BOOTX64.EFI"

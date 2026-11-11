@@ -26,8 +26,13 @@ items=(
     gamescope  "Gamescope: Steam Deck-style game compositor"            off
     vesktop    "Vesktop: Discord with Vencord, screen share with audio (Flatpak)" off
     prism      "Prism Launcher: Minecraft"                              off
-    zen        "Zen kernel: tuned for desktop/gaming latency (advanced)" off
 )
+if grep -q '^\[cachyos\]' /etc/pacman.conf; then
+    # The CachyOS kernel is already the gaming-tuned one.
+    items+=(proton "Proton-CachyOS: Proton with CachyOS's fixes and optimizations" off)
+else
+    items+=(zen "Zen kernel: tuned for desktop/gaming latency (advanced)" off)
+fi
 
 detected="Graphics:"
 has 1002 && detected+=" AMD"

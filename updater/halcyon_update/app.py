@@ -292,7 +292,7 @@ class Home(QWidget):
         st = load(STATE, {})
         self.info["checked"].setText(when(st.get("checked")))
         self.info["installed"].setText(when(st.get("installed")))
-        self.info["source"].setText("For Halcyon, Arch Linux packages, AUR packages and Flatpak apps.")
+        self.info["source"].setText("For Halcyon, CachyOS and Arch Linux packages, AUR packages and Flatpak apps.")
 
 
 class Select(QWidget):
@@ -393,7 +393,7 @@ class Select(QWidget):
         d = it.data(0, Qt.UserRole) if it else None
         if not d:
             return
-        src = {"repo": "Arch Linux / Halcyon", "aur": "AUR (built on your computer)", "flatpak": "Flathub"}[d["kind"]]
+        src = {"repo": "CachyOS / Arch Linux / Halcyon", "aur": "AUR (built on your computer)", "flatpak": "Flathub"}[d["kind"]]
         self.details.setHtml(
             f"<p style='font-size:12pt; color:#1e3287'><b>{d['name']}</b></p>"
             f"<p>{d['desc']}</p>"

@@ -1,0 +1,13 @@
+# CachyOS base, added to the ISO on top of Arch's releng package list.
+# (build.sh also swaps Arch's 'linux' kernel for linux-cachyos.)
+cachyos-keyring
+cachyos-mirrorlist
+cachyos-v3-mirrorlist
+cachyos-v4-mirrorlist
+# Kernel/sysctl/udev/zram tuning, ananicy-cpp process priorities
+cachyos-settings
+# Ranks CachyOS + Arch mirrors by speed (cachyos-rate-mirrors)
+cachyos-rate-mirrors
+# sched-ext CPU schedulers (scx_lavd, scx_bpfland...) and the CachyOS GUI to pick one; none runs until chosen
+scx-scheds
+scx-manager

@@ -1,7 +1,25 @@
 # Halcyon Linux
 
-An Arch-based live/install ISO with a Frutiger Aero look: KDE Plasma with glossy
+A CachyOS-based live/install ISO with a Frutiger Aero look: KDE Plasma with glossy
 aqua glass, orb window buttons, blur, Oxygen icons and Source Sans 3.
+
+## CachyOS base
+
+Halcyon builds on Arch with CachyOS's repos layered on top, for its gaming and performance work:
+
+- **Kernel**: `linux-cachyos` (BORE scheduler, CachyOS patches) instead of Arch's `linux`.
+- **Repos**: `[cachyos]` sits above `[core]`/`[extra]`, and `[multilib]` is on. The ISO uses the baseline
+  x86-64 builds so it boots anywhere; `halcyon-install` adds the `v3`, `v4` or `znver4` repos the CPU
+  supports, and can download those optimized builds while installing.
+- **Tuning**: `cachyos-settings` (sysctl, udev I/O schedulers, zram, NVIDIA tweaks) and `ananicy-cpp` with
+  CachyOS's rules. `scx-scheds` + `scx-manager` are installed; no sched-ext scheduler runs until you
+  pick one in scx-manager.
+- **Gaming Setup**: NVIDIA uses CachyOS's prebuilt `linux-cachyos-nvidia-open` modules, and offers
+  `proton-cachyos-slr`.
+
+`cachyos/` holds CachyOS's signing key and mirrorlist for the build (copied from
+[CachyOS-PKGBUILDS](https://github.com/CachyOS/CachyOS-PKGBUILDS)) plus the extra package list. `build.sh` uses a
+build-only pacman keyring in `work/gnupg`, so the build machine's own keyring isn't touched.
 
 ## Your art goes here
 
