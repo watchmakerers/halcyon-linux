@@ -77,7 +77,8 @@
     function stores() {
         for (const n of ["UserStore", "RelationshipStore", "PresenceStore", "ChannelStore", "MessageStore",
                          "PrivateChannelSortStore", "SelectedChannelStore", "UserProfileStore", "SessionsStore",
-                         "GuildStore", "SortedGuildStore", "GuildChannelStore", "ReadStateStore"])
+                         "GuildStore", "SortedGuildStore", "GuildChannelStore", "ReadStateStore",
+                         "ActiveThreadsStore"])
             if (!S[n]) S[n] = store(n);
         return S;
     }
@@ -170,14 +171,57 @@
             return { id: g.id, name: g.name, icon };
         }).filter(Boolean);
     }
-    function guildChannels(guildId) {
+    // Thread channel types: announcement thread (10), public (11), private (12).
+    const THREAD_TYPES = [10, 11, 12];
+    const FORUM_TYPES = [15, 16];            // forum, media: their posts are threads
+    function thread(t, fallbackParent) {
+        // t: a ChannelStore record or a raw API channel.
+        const meta = t.threadMetadata || t.thread_metadata || {};
+        let unread = false;
+        try { unread = S.ReadStateStore.hasUnread(t.id); } catch (e) {}
+        return { id: t.id, name: t.name || "thread", parentId: t.parent_id || t.parentId || fallbackParent,
+                 archived: !!meta.archived, unread,
+                 last: t.lastMessageId || t.last_message_id || t.id };
+    }
+    async function guildThreads(guildId, forums) {
+        // Threads Discord already holds (joined ones, and any it loaded for this server)...
+        const byParent = {};
+        const add = (t) => {
+            if (!t || t.archived) return;
+            (byParent[t.parentId] = byParent[t.parentId] || {})[t.id] = t;
+        };
+        try {
+            const all = S.ActiveThreadsStore.getThreadsForGuild(guildId) || {};
+            for (const p of Object.keys(all))
+                for (const id of Object.keys(all[p] || {})) {
+                    const c = S.ChannelStore.getChannel(id);
+                    if (c && THREAD_TYPES.includes(c.type)) add(thread(c, p));
+                }
+        } catch (e) {}
+        // ...plus each forum's active posts, fetched the way Discord's forum view does.
+        for (const f of forums) {
+            try {
+                const r = await actions().rest.get({ url: `/channels/${f.id}/threads/search`,
+                    query: { archived: false, sort_by: "last_message_time", sort_order: "desc", limit: 25 } });
+                for (const t of (r.body && r.body.threads) || []) add(thread(t, f.id));
+            } catch (e) {}
+        }
+        // Newest activity first (snowflake ids grow with time).
+        const out = {};
+        for (const p of Object.keys(byParent))
+            out[p] = Object.values(byParent[p]).sort((a, b) => (BigInt(b.last) > BigInt(a.last) ? 1 : -1));
+        return out;
+    }
+    async function guildChannels(guildId) {
         let list = [];
         try {
             const all = S.GuildChannelStore.getChannels(guildId);
             list = (all.SELECTABLE || []).map((x) => x.channel || x);
         } catch (e) {}
-        // Text-like channels only: text (0), announcements (5), forums are skipped.
-        return list.filter((c) => c.type === 0 || c.type === 5).map((c) => {
+        // Text (0), announcements (5), and forums/media (15, 16) whose posts are threads.
+        list = list.filter((c) => c.type === 0 || c.type === 5 || FORUM_TYPES.includes(c.type));
+        const threads = await guildThreads(guildId, list.filter((c) => FORUM_TYPES.includes(c.type)));
+        return list.map((c) => {
             let unread = false;
             try { unread = S.ReadStateStore.hasUnread(c.id); } catch (e) {}
             let parent = "", parentPos = -1;
@@ -186,7 +230,9 @@
                 if (p) { parent = p.name; parentPos = p.position; }
             } catch (e) {}
             return { id: c.id, name: c.name, topic: c.topic || "", unread, category: parent,
-                     categoryId: c.parent_id || "", categoryPos: parentPos, pos: c.position || 0 };
+                     categoryId: c.parent_id || "", categoryPos: parentPos, pos: c.position || 0,
+                     forum: FORUM_TYPES.includes(c.type),
+                     threads: (threads[c.id] || []).map(({ id, name, unread }) => ({ id, name, unread })) };
         });
     }
     const watched = new Set();

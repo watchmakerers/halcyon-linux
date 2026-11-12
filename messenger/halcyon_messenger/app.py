@@ -537,14 +537,18 @@ class ContactDelegate(QStyledItemDelegate):
                            QFontMetrics(f).elidedText(c.get("name", ""), Qt.ElideRight, r.width() - 24))
                 p.restore()
                 return
-            if kind in ("channel", "loading"):
+            if kind in ("channel", "forum", "loading"):
                 if idx.parent().isValid():
                     r = r.adjusted(12, 0, 0, 0)     # inside a category
+                if c.get("thread"):
+                    r = r.adjusted(14, 0, 0, 0)     # under its channel
                 f = font(12, bold=bool(c.get("unread")))
                 p.setFont(font(13))
                 p.setPen(GRAY)
-                p.drawText(QRect(r.x() + 4, r.y(), 16, r.height()), Qt.AlignCenter, "#" if kind == "channel" else "")
+                glyph = {"channel": "↳" if c.get("thread") else "#", "forum": "≡"}.get(kind, "")
+                p.drawText(QRect(r.x() + 4, r.y(), 16, r.height()), Qt.AlignCenter, glyph)
                 p.setFont(f)
+                # A forum isn't a conversation itself (its posts are): grey, like a heading.
                 p.setPen(TEXT if kind == "channel" else GRAY)
                 fm = QFontMetrics(f)
                 text = c.get("name", "")
@@ -721,13 +725,25 @@ class ContactList(QWidget):
         if chans is None:
             self._row(self.tree.invisibleRootItem(), "loading", {"name": "Loading channels…"})
             return
-        chans = [c for c in chans if not q or q in c["name"].casefold()]
+        def matches(c):
+            return not q or q in c["name"].casefold()
+        # A channel shows if it or one of its threads matches; a matching channel shows all its threads.
+        chans = [dict(c, threads=c.get("threads", []) if matches(c) else [t for t in c.get("threads", []) if matches(t)])
+                 for c in chans]
+        chans = [c for c in chans if matches(c) or c["threads"]]
+
+        def add(parent, c):
+            self._row(parent, "forum" if c.get("forum") else "channel", c)
+            for t in c["threads"]:
+                self._row(parent, "channel", dict(t, thread=True, parentName=c["name"], guild=c["guild"],
+                                                  guildName=c["guildName"], icon=c.get("icon")))
+
         # Uncategorized channels first, then each category in Discord's order.
         cat = None
         for c in sorted(chans, key=lambda c: (c.get("categoryPos", -1), c.get("pos", 0))):
             c = dict(c, guild=g["id"], guildName=g["name"], icon=g.get("icon"))
             if not c.get("categoryId"):
-                self._row(self.tree.invisibleRootItem(), "channel", c)
+                add(self.tree.invisibleRootItem(), c)
                 continue
             if cat is None or cat.data(0, Qt.UserRole + 2)["id"] != c["categoryId"]:
                 if cat is not None:
@@ -735,7 +751,7 @@ class ContactList(QWidget):
                 cat = self._row(self.tree.invisibleRootItem(), "category",
                                 {"id": c["categoryId"], "name": c.get("category", ""), "guild": g["id"]})
                 cat.setData(0, Qt.UserRole + 3, f"cat:{g['id']}:{c['categoryId']}")
-            self._row(cat, "channel", c)
+            add(cat, c)
         if cat is not None:
             cat.setExpanded(self.is_open(cat.data(0, Qt.UserRole + 3)) or bool(q))
         if not chans:
@@ -758,7 +774,9 @@ class ContactList(QWidget):
         it.setData(0, Qt.UserRole + 2, c)
         if kind == "contact":
             it.setToolTip(0, f"{c['name']} <{c.get('username', '')}>")
-        elif kind == "channel":
+        elif kind == "channel" and c.get("thread"):
+            it.setToolTip(0, f"Thread in #{c.get('parentName', '')}")
+        elif kind in ("channel", "forum"):
             it.setToolTip(0, c.get("topic") or f"#{c['name']}")
         return it
 
@@ -1739,7 +1757,8 @@ class Messenger(QObject):
         def opened(r):
             if not r:
                 return
-            w = self._convo(c["id"], title="#" + c["name"])
+            title = f"{c['name']} (in #{c.get('parentName', '')})" if c.get("thread") else "#" + c["name"]
+            w = self._convo(c["id"], title=title)
             w.guild = c
             self.bridge.call("watch", {"channelId": c["id"], "on": True})
             for m in r["messages"]:
