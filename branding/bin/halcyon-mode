@@ -52,7 +52,8 @@ float_screens() { get --file halcyonrc --group Mode --key floatScreens --default
 
 # Panel placement per mode (Plasma script, acting on panel p).
 PANEL_CLASSIC="p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = false; p.lengthMode = 'fill'; p.hiding = 'none';"
-PANEL_TILING="p.location = 'top'; p.height = Math.round(gridUnit * 1.6); p.floating = true; p.hiding = 'none';"
+PANEL_TILING="p.location = 'top'; p.height = Math.round(gridUnit * 1.6); p.floating = true; p.hiding = 'none';
+    if (p.widgets().length == p.widgets('org.halcyon.workspaces').length) { p.lengthMode = 'fit'; p.alignment = 'center'; }"
 
 # Top-left corners ("x,y") of the floating monitors, to find their panels:
 # Plasma's scripting API knows a panel's screen geometry, not its connector name.
@@ -107,8 +108,21 @@ deco() {
     fi
 }
 
+# Rounded window corners (kwin-effect-rounded-corners), on in tiling mode only:
+# classic mode's Aero frames already have their own rounded tops.
+CORNERS=kwin4_effect_shapecorners
+corners() {  # corners true|false
+    cfg --file kwinrc --group Plugins --key "${CORNERS}Enabled" "$1"
+    if [[ $1 == true ]]; then
+        dbus org.kde.KWin /Effects org.kde.kwin.Effects.loadEffect "string:$CORNERS" >/dev/null 2>&1 || true
+    else
+        dbus org.kde.KWin /Effects org.kde.kwin.Effects.unloadEffect "string:$CORNERS" >/dev/null 2>&1 || true
+    fi
+}
+
 tiling() {
     cfg --file halcyonrc --group Mode --key current tiling
+    corners true
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled true
     cfg --file kwinrc --group Script-krohnkite --key screenGapTop 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapBottom 8
@@ -148,6 +162,7 @@ tiling() {
 
 classic() {
     cfg --file halcyonrc --group Mode --key current classic
+    corners false
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled false
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:krohnkite >/dev/null || true
     release_windows

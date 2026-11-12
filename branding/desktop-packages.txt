@@ -2,6 +2,7 @@
 plasma-desktop
 plasma-workspace
 kwin
+kwin-effect-rounded-corners
 sddm
 sddm-kcm
 plasma-nm
