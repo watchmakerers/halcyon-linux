@@ -1408,11 +1408,34 @@ class Conversation(QWidget):
             return
         self.input.clear()
         self.last_typing_sent = 0
-        self.app.bridge.call("send", {"channelId": self.channel_id, "text": text})
+        self.deliver(text)
+
+    def deliver(self, text):
+        """Send text, and say so in the conversation if Discord refuses it or never answers
+        (the hidden Discord page can lose its connection after running a long time)."""
+        state = {"done": False}
+
+        def done(ok, late=False):
+            if state["done"]:
+                return
+            state["done"] = True
+            if ok:
+                return
+            why = ("might not have been delivered (Discord didn't answer)" if late
+                   else "could not be delivered")
+            preview = html.escape(text if len(text) <= 200 else text[:200] + "…")
+            try:
+                self._append(f"<p style='color:#c0392b; margin:6px 0'>The following message {why}:</p>"
+                             f"<p style='margin:1px 0 0 14px; color:#6d7f95'>{preview}</p>")
+            except RuntimeError:            # the window was closed meanwhile
+                pass
+
+        self.app.bridge.call("send", {"channelId": self.channel_id, "text": text}, done)
+        QTimer.singleShot(20000, lambda: done(False, late=True))
 
     def pick_gif(self, button):
         p = GifPicker(self.app, self)
-        p.picked.connect(lambda url: self.app.bridge.call("send", {"channelId": self.channel_id, "text": url}))
+        p.picked.connect(self.deliver)
         pos = button.mapToGlobal(QPoint(0, 0))
         p.move(pos.x(), pos.y() - p.height() - 4)
         p.show()
@@ -1423,7 +1446,7 @@ class Conversation(QWidget):
         if now - getattr(self, "_last_nudge", 0) < 5:
             return
         self._last_nudge = now
-        self.app.bridge.call("send", {"channelId": self.channel_id, "text": NUDGE_TEXT})
+        self.deliver(NUDGE_TEXT)
         self.shake()
         self.app.sounds.play("nudge")
 
