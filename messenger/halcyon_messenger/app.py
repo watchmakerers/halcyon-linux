@@ -1865,7 +1865,13 @@ def ensure_skin(parent=None):
 
 
 def main():
-    os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu-compositing")
+    # Discord runs in a hidden page. Chromium throttles hidden pages' timers after a few
+    # minutes, Discord's gateway connection then drops, and sendMessage queues messages
+    # until it is back: DMs silently stop sending. Keep the hidden page at full speed.
+    flags = ["--disable-gpu-compositing", "--disable-background-timer-throttling",
+             "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"]
+    have = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "").split()
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = " ".join(have + [f for f in flags if f not in have])
     # Wayland doesn't let apps place their windows; sign-in popups need the screen corner.
     os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
