@@ -59,6 +59,12 @@ BINDINGS = [
     ("Windows", ["Alt+Tab"], "Next window", ("kde", "kwin", "Walk Through Windows", [])),
     ("Windows", ["Meta+Ctrl+Alt+Up"], "Overview", ("kde", "kwin", "Overview", [])),
 
+    # --- monitors (Krohnkite tiles each screen on its own, in either mode) --
+    ("Monitors", ["Meta+Alt+Left"], "Focus monitor left", ("kde", "kwin", "Switch to Screen to the Left", [])),
+    ("Monitors", ["Meta+Alt+Right"], "Focus monitor right", ("kde", "kwin", "Switch to Screen to the Right", [])),
+    ("Monitors", ["Meta+Alt+Shift+Left"], "Move window to monitor left", ("kde", "kwin", "Window One Screen to the Left", [])),
+    ("Monitors", ["Meta+Alt+Shift+Right"], "Move window to monitor right", ("kde", "kwin", "Window One Screen to the Right", [])),
+
     # --- tiling mode (Krohnkite; only active in tiling mode) -----------------
     ("Tiling", ["Meta+T"], "Toggle window floating/tiling", ("kde", "kwin", "KrohnkiteToggleFloat", [])),
     ("Tiling", ["Meta+J"], "Toggle window split", ("kde", "kwin", "KrohnkiteRotate", [])),

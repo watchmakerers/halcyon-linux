@@ -32,6 +32,10 @@ Windows	Meta+Ctrl+Up	Snap window top
 Windows	Meta+Ctrl+Down	Snap window bottom
 Windows	Alt+Tab	Next window
 Windows	Meta+Ctrl+Alt+Up	Overview
+Monitors	Meta+Alt+Left	Focus monitor left
+Monitors	Meta+Alt+Right	Focus monitor right
+Monitors	Meta+Alt+Shift+Left	Move window to monitor left
+Monitors	Meta+Alt+Shift+Right	Move window to monitor right
 Tiling	Meta+T	Toggle window floating/tiling
 Tiling	Meta+J	Toggle window split
 Tiling	Meta+L	Cycle workspace layout

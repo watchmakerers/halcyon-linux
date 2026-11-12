@@ -7,6 +7,9 @@
 #                          windows with a glowing edge, slim bar on top
 #   halcyon-mode toggle    switch to the other one
 #   halcyon-mode bar       show/hide the panel (tiling-mode Super+Shift+Space)
+#   halcyon-mode float [MONITOR...]
+#                          in tiling mode, leave these monitors floating
+#                          (connector names, e.g. HDMI-A-1); no names = tile all
 #   halcyon-mode status    print the current mode
 set -euo pipefail
 
@@ -43,6 +46,35 @@ kwin_js() {  # kwin_js <code>: run a one-shot KWin script
 }
 
 current() { get --file halcyonrc --group Mode --key current --default classic; }
+
+# Monitors that stay floating in tiling mode, comma-separated connector names.
+float_screens() { get --file halcyonrc --group Mode --key floatScreens --default ""; }
+
+# Panel placement per mode (Plasma script, acting on panel p).
+PANEL_CLASSIC="p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = false; p.lengthMode = 'fill'; p.hiding = 'none';"
+PANEL_TILING="p.location = 'top'; p.height = Math.round(gridUnit * 1.6); p.floating = true; p.hiding = 'none';"
+
+# Top-left corners ("x,y") of the floating monitors, to find their panels:
+# Plasma's scripting API knows a panel's screen geometry, not its connector name.
+float_corners() {
+    local floats; floats=$(float_screens)
+    [[ -n $floats ]] || return 0
+    kscreen-doctor -j 2>/dev/null | FLOATS=$floats python3 -I -c '
+import json, os, sys
+names = set(os.environ["FLOATS"].split(","))
+for o in json.load(sys.stdin)["outputs"]:
+    if o.get("enabled") and o["name"] in names:
+        print("%d,%d" % (o["pos"]["x"], o["pos"]["y"]))'
+}
+
+# Hand windows back from Krohnkite: it puts tiled windows on the keep-below
+# layer and, with noTileBorder, strips their borders.
+release_windows() {
+    local borders=""
+    [[ $(get --file kwinrc --group Script-krohnkite --key noTileBorder --default false) == true ]] &&
+        borders="w.noBorder = false;"
+    kwin_js "workspace.windowList().forEach(function (w) { if (w.normalWindow && w.keepBelow) { w.keepBelow = false; $borders } });" || true
+}
 
 set_desktops() {  # set_desktops N: grow/shrink virtual desktops to N
     local want=$1 have ids
@@ -84,9 +116,21 @@ tiling() {
     cfg --file kwinrc --group Script-krohnkite --key screenGapRight 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapBetween 8
     cfg --file kwinrc --group Script-krohnkite --key soleWindowNoGaps false
-    cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAeroSlim)"
-    cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft ""
-    cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+    local floats; floats=$(float_screens)
+    cfg --file kwinrc --group Script-krohnkite --key ignoreScreen "$floats"
+    if [[ -n $floats ]]; then
+        # The window theme is global, and the slim one has no title bar: floating
+        # monitors keep the classic theme, tiled windows go borderless instead.
+        cfg --file kwinrc --group Script-krohnkite --key noTileBorder true
+        cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAero)"
+        cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft M
+        cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight IAX
+    else
+        cfg --file kwinrc --group Script-krohnkite --key noTileBorder false
+        cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAeroSlim)"
+        cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft ""
+        cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
+    fi
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
     # Enabling the plugin in kwinrc isn't enough: ask KWin to load enabled scripts.
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.start >/dev/null
@@ -95,8 +139,10 @@ tiling() {
         notify "Tiling failed: KWin could not load Krohnkite (see: journalctl --user -b | grep -i krohnkite)"
         echo "Krohnkite did not load." >&2
     fi
-    set_desktops 10
-    plasma_js "panels().forEach(function (p) { p.location = 'top'; p.height = Math.round(gridUnit * 1.6); p.floating = true; p.hiding = 'none'; })"
+    set_desktops "$(get --file halcyonrc --group Mode --key workspaces --default 10)"  # tiling-mode workspace count
+    # Floating monitors keep the classic taskbar; tiled ones get the slim top bar.
+    local corners; corners=$(float_corners | sed "s/.*/'&'/" | paste -sd,)
+    plasma_js "var floats = [$corners]; panels().forEach(function (p) { var g = screenGeometry(p.screen); if (floats.indexOf(g.x + ',' + g.y) >= 0) { $PANEL_CLASSIC } else { $PANEL_TILING } })"
     notify "Tiling mode: Super+Ctrl+Alt+Space to go back"
 }
 
@@ -104,14 +150,13 @@ classic() {
     cfg --file halcyonrc --group Mode --key current classic
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled false
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:krohnkite >/dev/null || true
-    # Krohnkite puts tiled windows on the keep-below layer; give them back their normal stacking.
-    kwin_js "workspace.windowList().forEach(function (w) { if (w.normalWindow && w.keepBelow) w.keepBelow = false; });" || true
+    release_windows
     cfg --file kwinrc --group org.kde.kdecoration2 --key theme "$(deco HalcyonAero)"
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnLeft M
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight IAX
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
     set_desktops 4
-    plasma_js "panels().forEach(function (p) { p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = false; p.lengthMode = 'fill'; p.hiding = 'none'; })"
+    plasma_js "panels().forEach(function (p) { $PANEL_CLASSIC })"
     notify "Classic mode"
 }
 
@@ -119,7 +164,18 @@ case ${1:-toggle} in
     tiling)  tiling ;;
     classic) classic ;;
     toggle)  if [[ $(current) == tiling ]]; then classic; else tiling; fi ;;
+    float)
+        floats=$(IFS=,; echo "${*:2}")
+        cfg --file halcyonrc --group Mode --key floatScreens "$floats"
+        if [[ $(current) == tiling ]]; then
+            # Krohnkite reads its settings only when it loads: restart it.
+            dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:krohnkite >/dev/null || true
+            release_windows
+            tiling
+        fi
+        echo "floating monitors: ${floats:-none}"
+        ;;
     bar)     plasma_js "panels().forEach(function (p) { p.hiding = (p.hiding == 'none') ? 'autohide' : 'none'; })" ;;
-    status)  echo "mode: $(current)"; script_loaded && echo "krohnkite: loaded" || echo "krohnkite: not loaded" ;;
-    *)       echo "usage: halcyon-mode classic|tiling|toggle|bar|status" >&2; exit 2 ;;
+    status)  echo "mode: $(current)"; echo "floating monitors: $(float_screens)"; script_loaded && echo "krohnkite: loaded" || echo "krohnkite: not loaded" ;;
+    *)       echo "usage: halcyon-mode classic|tiling|toggle|float [MONITOR...]|bar|status" >&2; exit 2 ;;
 esac
