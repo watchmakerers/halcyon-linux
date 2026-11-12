@@ -20,9 +20,11 @@ items+=(custom "Custom color…" "$custom")
 pick=$(kdialog --title "$title" --icon preferences-desktop-color --geometry 420x560 \
     --radiolist "Choose the color of windows, the Start menu and the taskbar:" "${items[@]}") || exit 0
 if [[ $pick == custom ]]; then
-    pick=$(kdialog --title "$title" --getcolor --default "$current") || exit 0
+    default=$current
+    [[ $default == \#* ]] || default="#1e9be0"      # a style (e.g. zune) has no single colour
+    pick=$(kdialog --title "$title" --getcolor --default "$default") || exit 0
 fi
-[[ $pick =~ ^#[0-9a-fA-F]{6}$ ]] || exit 0
+[[ $pick =~ ^#[0-9a-fA-F]{6}$ || $pick == zune ]] || exit 0
 
 # Recolouring rewrites the theme files and restarts the desktop shell (a second or two).
 if out=$(QT_QPA_PLATFORM=offscreen $PY color "$pick" 2>&1); then

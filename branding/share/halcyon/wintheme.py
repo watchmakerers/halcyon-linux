@@ -4,8 +4,8 @@
     wintheme.py list                       themes installed in Halcyon's Windows prefix
     wintheme.py apply FILE.theme [--no-wallpaper] [--no-cursors] [--no-sounds] [--no-colors]
     wintheme.py restore                    back to Halcyon's own colours
-    wintheme.py presets                    the built-in window colours (id, name, colour)
-    wintheme.py color PRESET|#rrggbb       recolour Halcyon (taskbar, menus, windows)
+    wintheme.py presets                    the built-in window colours (id, name, colour; a style's colour is its id)
+    wintheme.py color PRESET|zune|#rrggbb  recolour Halcyon (taskbar, menus, windows)
     wintheme.py refresh                    re-make the recoloured copies if Halcyon was updated
 
 Wallpaper -> Plasma wallpaper; .cur/.ani cursors -> an Xcursor theme
@@ -280,17 +280,46 @@ def _tint_rgb(r, g, b, dh, sat, gamma=1.0):
     return round(r2 * 255), round(g2 * 255), round(b2 * 255)
 
 
+# Two-colour styles: instead of rotating everything to one hue, the glass and
+# the accents are recoloured separately, like the Windows XP Zune theme
+# (black glass, orange highlights).
+STYLES = [
+    ("zune", "Zune (black and orange)"),
+]
+ZUNE_ORANGE_HUE = 26.0 / 360           # #f47b20
+
+
+def _zune_rgb(r, g, b):
+    """Halcyon's blues -> Zune: dark and pale blues become warm graphite and
+    off-white, the bright blue accents become orange. Other hues (red close
+    button, green/red status colours, amber attention) stay as they are."""
+    import colorsys
+    h, l, s_ = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    if s_ < 0.06 or not 170 / 360 <= h <= 250 / 360:
+        return r, g, b
+    if s_ >= 0.5 and 0.25 <= l <= 0.88:     # highlights, focus, links, the lit orb
+        r2, g2, b2 = colorsys.hls_to_rgb(ZUNE_ORANGE_HUE, l, s_)
+    else:                                    # glass, window backgrounds, text
+        r2, g2, b2 = colorsys.hls_to_rgb(ZUNE_ORANGE_HUE, l, min(1.0, s_) * 0.06)
+    return round(r2 * 255), round(g2 * 255), round(b2 * 255)
+
+
 def tint_text(text, dh, sat, gamma=1.0):
-    """Recolour #rrggbb, #aarrggbb and 'r,g,b' triplets in a text file."""
+    """Recolour #rrggbb, #aarrggbb and 'r,g,b' triplets by a hue rotation."""
+    return recolor_text(text, lambda r, g, b: _tint_rgb(r, g, b, dh, sat, gamma))
+
+
+def recolor_text(text, fn):
+    """Recolour #rrggbb, #aarrggbb and 'r,g,b' triplets in a text file with fn(r, g, b)."""
     def hex6(m):
         r, g, b = (int(m.group(1)[i:i + 2], 16) for i in (0, 2, 4))
-        return "#%02x%02x%02x" % _tint_rgb(r, g, b, dh, sat, gamma)
+        return "#%02x%02x%02x" % fn(r, g, b)
     def hex8(m):
         a = m.group(1)
         r, g, b = (int(m.group(2)[i:i + 2], 16) for i in (0, 2, 4))
-        return "#%s%02x%02x%02x" % (a, *_tint_rgb(r, g, b, dh, sat, gamma))
+        return "#%s%02x%02x%02x" % (a, *fn(r, g, b))
     def trip(m):
-        return "%s=%d,%d,%d" % (m.group(1), *_tint_rgb(*(int(x) for x in m.group(2, 3, 4)), dh, sat, gamma))
+        return "%s=%d,%d,%d" % (m.group(1), *fn(*(int(x) for x in m.group(2, 3, 4))))
     text = re.sub(r'#([0-9a-fA-F]{2})([0-9a-fA-F]{6})(?![0-9a-fA-F])', hex8, text)
     text = re.sub(r'#([0-9a-fA-F]{6})(?![0-9a-fA-F])', hex6, text)
     return re.sub(r'^(\w+)=(\d{1,3}),(\d{1,3}),(\d{1,3})(?=,|$)', trip, text, flags=re.M)
@@ -339,6 +368,21 @@ def tint_halcyon(rgb, light=False, restart_shell=True):
     sat = 0.15 if s_ < 0.12 else min(1.25, 0.45 + s_)      # colourless themes: grey glass
     # Lighter glass is capped so white text on highlights stays readable.
     gamma = max(0.8, min(1.8, math.log(max(l, 0.05)) / math.log(BASE_LIGHT))) if light else 1.0
+    make_tinted(lambda r, g, b: _tint_rgb(r, g, b, dh, sat, gamma))
+    save_tint("#%02x%02x%02x" % tuple(rgb), light)
+    use_chrome("Halcyon-Tinted", "HalcyonAeroTinted", restart_shell)
+    return dh, sat
+
+
+def zune_halcyon(restart_shell=True):
+    """Halcyon in the Windows XP Zune theme's colours: graphite glass, orange accents."""
+    make_tinted(_zune_rgb)
+    save_tint("zune", False)
+    use_chrome("Halcyon-Tinted", "HalcyonAeroTinted", restart_shell)
+
+
+def make_tinted(fn):
+    """Write copies of Halcyon's chrome to ~/.local/share with every colour passed through fn."""
     for kind, (src, dst) in TINTED.items():
         src, dst = os.path.join(SYS, src), os.path.join(DATA, dst)
         if not os.path.exists(src):
@@ -354,7 +398,7 @@ def tint_halcyon(rgb, light=False, restart_shell=True):
         for f in files:
             if f.endswith((".svg", ".qml", ".colors", "rc", "colors")) or os.path.basename(f) == "colors":
                 with open(f, encoding="utf-8") as fh:
-                    text = tint_text(fh.read(), dh, sat, gamma)
+                    text = recolor_text(fh.read(), fn)
                 with open(f, "w", encoding="utf-8") as fh:
                     fh.write(text)
     # Give the copies their own names so Plasma treats them as separate themes.
@@ -384,9 +428,6 @@ def tint_halcyon(rgb, light=False, restart_shell=True):
                 "Name=Halcyon Aero", "Name=Halcyon Aero (tinted)")
         with open(cs, "w") as f:
             f.write(text)
-    save_tint("#%02x%02x%02x" % tuple(rgb), light)
-    use_chrome("Halcyon-Tinted", "HalcyonAeroTinted", restart_shell)
-    return dh, sat
 
 
 def _run(*a):
@@ -432,7 +473,10 @@ def restore_halcyon():
 
 
 def set_color(spec):
-    """Recolour Halcyon with a preset id/name or a #rrggbb colour."""
+    """Recolour Halcyon with a preset id/name, a style id or a #rrggbb colour."""
+    if spec.lower() == "zune":
+        zune_halcyon()
+        return
     hexc = next((c for i, n, c in PRESETS if spec.lower() in (i, n.lower())), spec)
     if not re.fullmatch(r"#[0-9a-fA-F]{6}", hexc):
         raise SystemExit(f"Unknown colour: {spec} (use a preset id or #rrggbb)")
@@ -445,12 +489,15 @@ def set_color(spec):
 def refresh():
     """After a Halcyon update the recoloured copies are stale: make them again."""
     color = _run("kreadconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "tint").stdout.strip()
-    if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+    if not (re.fullmatch(r"#[0-9a-fA-F]{6}", color) or color == "zune"):
         return
     stamp = lambda p: os.path.getmtime(p) if os.path.exists(p) else 0
     sys_meta = os.path.join(SYS, TINTED["desktoptheme"][0], "metadata.json")
     own_meta = os.path.join(DATA, TINTED["desktoptheme"][1], "metadata.json")
     if stamp(own_meta) >= stamp(sys_meta):
+        return
+    if color == "zune":
+        zune_halcyon()
         return
     light = _run("kreadconfig6", "--file", "halcyonrc", "--group", "Colors", "--key", "light").stdout.strip() == "true"
     tint_halcyon(tuple(int(color[i:i + 2], 16) for i in (1, 3, 5)), light=light)
@@ -534,6 +581,8 @@ if __name__ == "__main__":
     elif len(sys.argv) >= 2 and sys.argv[1] == "presets":
         for i, n, c in PRESETS:
             print(f"{i}\t{n}\t{c}")
+        for i, n in STYLES:                 # styles have no single colour: their id stands in
+            print(f"{i}\t{n}\t{i}")
     elif len(sys.argv) >= 3 and sys.argv[1] == "color":
         set_color(sys.argv[2])
     elif len(sys.argv) >= 2 and sys.argv[1] == "refresh":
