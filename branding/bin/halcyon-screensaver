@@ -11,19 +11,22 @@ set -uo pipefail
 PREFIX=${HALCYON_WINEPREFIX:-${XDG_DATA_HOME:-$HOME/.local/share}/halcyon/windows}
 EXTRA=${XDG_DATA_HOME:-$HOME/.local/share}/halcyon/screensavers
 SHARE=/usr/share/halcyon/screensaver
+NOSLEEP="systemd-inhibit --what=sleep --mode=block --who=Halcyon-screensaver --why=Screensaver-showing"
 cfg() { kreadconfig6 --file halcyonrc --group Screensaver --key "$1" --default "$2"; }
 
-running() { pgrep -f "halcyon-screensaver-window|$SHARE/screensaver.qml|\.scr\b.*/s" >/dev/null; }
+running() { pgrep -f "$SHARE/screensaver.qml|\.scr\b.*/s" >/dev/null; }
 
 run_saver() {
     local saver=$1
     running && return 0
+    # systemd-inhibit: the PC doesn't go to sleep while a screensaver is showing
+    # (the screen still locks on schedule).
     if [[ $saver == bubbles || ! -f $saver ]]; then
-        exec -a halcyon-screensaver-window /usr/lib/qt6/bin/qml "$SHARE/screensaver.qml"
+        exec $NOSLEEP /usr/lib/qt6/bin/qml "$SHARE/screensaver.qml"
     fi
     # Windows screensaver: "/s" runs it fullscreen; it exits on mouse/keys itself.
     command -v wine >/dev/null || exec "$0" --run bubbles
-    WINEPREFIX=$PREFIX WINEDEBUG=-all exec wine "$saver" /s
+    WINEPREFIX=$PREFIX WINEDEBUG=-all exec $NOSLEEP wine "$saver" /s
 }
 
 list_savers() {  # "path<TAB>name" for every .scr we can find
