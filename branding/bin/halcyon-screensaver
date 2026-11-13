@@ -14,7 +14,7 @@ SHARE=/usr/share/halcyon/screensaver
 NOSLEEP="systemd-inhibit --what=sleep --mode=block --who=Halcyon-screensaver --why=Screensaver-showing"
 cfg() { kreadconfig6 --file halcyonrc --group Screensaver --key "$1" --default "$2"; }
 
-running() { pgrep -f "$SHARE/screensaver.qml|\.scr\b.*/s" >/dev/null; }
+running() { pgrep -if "$SHARE/screensaver.qml|^[A-Za-z]:.*\.scr /s$" >/dev/null; }
 
 run_saver() {
     local saver=$1
@@ -26,7 +26,46 @@ run_saver() {
     fi
     # Windows screensaver: "/s" runs it fullscreen; it exits on mouse/keys itself.
     command -v wine >/dev/null || exec "$0" --run bubbles
-    WINEPREFIX=$PREFIX WINEDEBUG=-all exec $NOSLEEP wine "$saver" /s
+    export WINEPREFIX=$PREFIX WINEDEBUG=-all
+    (( $(monitors | wc -l) > 1 )) && exec $NOSLEEP "$0" --span "$saver"
+    exec $NOSLEEP wine "$saver" /s
+}
+
+monitors() {  # "WIDTHxHEIGHT" per monitor, left to right
+    xrandr --listmonitors 2>/dev/null |
+        sed -nE 's#^ *[0-9]+: +[^ ]+ ([0-9]+)/[0-9]+x([0-9]+)/[0-9]+\+(-?[0-9]+)\+(-?[0-9]+).*#\3 \4 \1x\2#p' |
+        sort -n -k1,1 -k2,2 | awk '{print $3}'
+}
+
+span_saver() {
+    # Plus! and other DirectX screensavers draw only on the main monitor and
+    # black out the rest. Give each monitor its own copy, each in a Wine
+    # desktop the size of that monitor, which KWin (span.js) puts fullscreen
+    # on it. When one copy exits (mouse or keys), the others are closed.
+    local saver=$1 win i=0 n t size pat
+    win=$(winepath -w "$saver" 2>/dev/null) || win=$saver
+    # Windows processes show their command line as "C:\...\name.scr /s".
+    pat="^[A-Za-z]:.*[\\/]${win##*[\\/]} /s"
+    qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript halcyon-saver-span >/dev/null 2>&1
+    qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$SHARE/span.js" halcyon-saver-span >/dev/null 2>&1 &&
+        qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start >/dev/null 2>&1
+    # Open and place the empty desktops first: a window moved after the saver
+    # starts counts as mouse movement and the saver quits.
+    while read -r size; do
+        wine explorer /desktop="HalcyonSaver$i,$size" >/dev/null 2>&1 &
+        i=$((i + 1))
+    done < <(monitors)
+    sleep 2
+    for ((n = 0; n < i; n++)); do
+        wine explorer /desktop="HalcyonSaver$n" "$win" /s >/dev/null 2>&1 &
+    done
+    # Wait for the copies to start, then until any one of them exits.
+    for ((t = 0; t < 40 && $(pgrep -fc "$pat") < i; t++)); do sleep 0.25; done
+    while (( $(pgrep -fc "$pat") >= i )); do sleep 0.25; done
+    pkill -f "$pat" 2>/dev/null
+    pkill -f "^[A-Za-z]:.*explorer.exe /desktop=HalcyonSaver" 2>/dev/null
+    wait
+    qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript halcyon-saver-span >/dev/null 2>&1
 }
 
 list_savers() {  # "path<TAB>name" for every .scr we can find
@@ -40,6 +79,7 @@ list_savers() {  # "path<TAB>name" for every .scr we can find
 
 case ${1:-} in
     --run) run_saver "${2:-bubbles}" ;;
+    --span) span_saver "$2" ;;
     --daemon)
         # swayidle uses Wayland's idle protocol, which KWin supports and which
         # respects "don't sleep" requests from video players.
