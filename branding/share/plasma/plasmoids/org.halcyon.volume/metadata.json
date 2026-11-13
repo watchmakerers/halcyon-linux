@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "Halcyon Linux" }],
+        "Category": "System Information",
+        "Description": "Volume slider and per-program mixer, Vista style",
+        "Icon": "audio-volume-high",
+        "Id": "org.halcyon.volume",
+        "License": "GPL-3.0-or-later",
+        "Name": "Volume",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": "true",
+    "X-Plasma-NotificationAreaCategory": "Hardware"
+}
