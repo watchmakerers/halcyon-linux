@@ -7,6 +7,9 @@ Item {
     id: art
     property bool lit: false
     readonly property real d: Math.min(width, height)
+    // Plain hex colours, so Window Color (wintheme.py) can recolour a copy of this file.
+    readonly property color glow: "#8ce6ff"
+    readonly property color rim: "#000a17"
 
     onLitChanged: { body.requestPaint(); gloss.requestPaint() }
     onDChanged: { body.requestPaint(); gloss.requestPaint() }
@@ -20,8 +23,8 @@ Item {
             c.reset()
             if (art.lit) {
                 const g = c.createRadialGradient(r, r, r * 0.6, r, r, r)
-                g.addColorStop(0, Qt.rgba(0.55, 0.9, 1, 0.75))
-                g.addColorStop(1, Qt.rgba(0.55, 0.9, 1, 0))
+                g.addColorStop(0, Qt.rgba(art.glow.r, art.glow.g, art.glow.b, 0.75))
+                g.addColorStop(1, Qt.rgba(art.glow.r, art.glow.g, art.glow.b, 0))
                 c.fillStyle = g
                 c.beginPath(); c.arc(r, r, r, 0, Math.PI * 2); c.fill()
             }
@@ -35,7 +38,7 @@ Item {
             c.fillStyle = s
             c.beginPath(); c.arc(r, r, R, 0, Math.PI * 2); c.fill()
             c.lineWidth = Math.max(1, R * 0.06)
-            c.strokeStyle = Qt.rgba(0, 0.04, 0.09, 0.9)
+            c.strokeStyle = Qt.rgba(art.rim.r, art.rim.g, art.rim.b, 0.9)
             c.stroke()
             c.lineWidth = 1
             c.strokeStyle = Qt.rgba(1, 1, 1, 0.35)

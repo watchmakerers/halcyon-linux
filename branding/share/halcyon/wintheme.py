@@ -241,6 +241,12 @@ TINTED = {
     "aurorae-slim": ("aurorae/themes/HalcyonAeroSlim", "aurorae/themes/HalcyonAeroSlimTinted"),
     "colors": ("color-schemes/HalcyonAero.colors", "color-schemes/HalcyonAeroTinted.colors"),
     "orbs": ("plasma/plasmoids/org.halcyon.workspaces", "plasma/plasmoids/org.halcyon.workspaces"),
+    "startmenu": ("plasma/plasmoids/org.halcyon.startmenu", "plasma/plasmoids/org.halcyon.startmenu"),
+}
+# Copies where only some files are recoloured: the Start menu keeps its own
+# look, only its orb follows the window colour.
+TINT_ONLY = {
+    "startmenu": ("contents/ui/OrbArt.qml",),
 }
 
 
@@ -395,7 +401,12 @@ def make_tinted(fn):
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(src, dst)
             files = [dst]
+        only = TINT_ONLY.get(kind)
+        if only:
+            files = [os.path.join(dst, f) for f in only]
         for f in files:
+            if not os.path.exists(f):
+                continue
             if f.endswith((".svg", ".qml", ".colors", "rc", "colors")) or os.path.basename(f) == "colors":
                 with open(f, encoding="utf-8") as fh:
                     text = recolor_text(fh.read(), fn)
@@ -456,7 +467,7 @@ def use_chrome(desktop_theme, colors, restart_shell=True):
     run("kwriteconfig6", "--file", "kwinrc", "--group", "org.kde.kdecoration2", "--key", "theme",
         decoration(desktop_theme.endswith("-Tinted")))
     run("dbus-send", "--session", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
-    if restart_shell:      # the workspace orbs read their colours at start
+    if restart_shell:      # the workspace and Start orbs read their colours at start
         run("systemctl", "--user", "restart", "plasma-plasmashell.service")
 
 

@@ -53,7 +53,7 @@ The ISO lands in `out/`. Test it with
   `Super+K` shows the cheat sheet. Hyprland-only bindings (groups, scratchpad, universal copy/paste) are omitted.
 - **Desktop modes**: `halcyon-mode classic|tiling|toggle` (or `Super+Ctrl+Alt+Space`) switches live between the
   floating Aero desktop and Hyprland-style tiling (Krohnkite, gaps, borderless glowing-edge windows, top bar).
-- **Window Color** (`halcyon-colors`, in the app menu and Welcome Center): recolour the taskbar, Start menu, window
+- **Window Color** (`halcyon-colors`, in the app menu and Welcome Center): recolour the taskbar, Start menu and orb, window
   borders and highlights with Vista-style colours (Sky, Twilight, Sea, Leaf, Lime, Sun, Pumpkin, Ruby, Fuchsia, Blush,
   Violet, Lavender, Taupe, Chocolate, Slate, Graphite, Frost), the two-colour **Zune** style (graphite glass with
   orange accents, after the Windows XP Zune theme) or any custom colour. Tiling mode keeps the colour, and
