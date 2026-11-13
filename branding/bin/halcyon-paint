@@ -1,0 +1,5 @@
+#!/bin/sh
+# Halcyon Paint.   halcyon-paint [FILE]
+here=/usr/share/halcyon-paint
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../paint   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_paint.app "$@"

@@ -135,7 +135,7 @@ package() {
     for f in halcyon-install halcyon-mode halcyon-keys halcyon-gaming halcyon-dev \
              halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-colors halcyon-update \
              halcyon-games halcyon-osk halcyon-gadgets halcyon-messenger halcyon-mediacenter \
-             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-experience halcyon-backup halcyon-calc halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-hearts halcyon-mines halcyon-chess halcyon-tiles; do
+             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-experience halcyon-backup halcyon-calc halcyon-paint halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-hearts halcyon-mines halcyon-chess halcyon-tiles; do
         install -Dm755 "$startdir/bin/$f" "$pkgdir/usr/bin/$f"
     done
     ln -s halcyon-navigator "$pkgdir/usr/bin/halcyon-retro-browser"    # its old name
@@ -213,6 +213,10 @@ package() {
     # Calculator
     install -d "$share/halcyon-calc/halcyon_calc"
     install -m644 "$startdir"/../calc/halcyon_calc/*.py "$share/halcyon-calc/halcyon_calc/"
+
+    # Paint
+    install -d "$share/halcyon-paint/halcyon_paint"
+    install -m644 "$startdir"/../paint/halcyon_paint/*.py "$share/halcyon-paint/halcyon_paint/"
 
     # Welcome Center
     install -d "$share/halcyon-welcome/halcyon_welcome"

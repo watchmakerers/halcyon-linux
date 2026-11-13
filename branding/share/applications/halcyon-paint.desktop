@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Paint
+GenericName=Image Editor
+Comment=Draw pictures and edit images
+Exec=halcyon-paint %f
+Icon=kolourpaint
+Categories=Graphics;2DGraphics;RasterGraphics;
+MimeType=image/png;image/jpeg;image/bmp;image/gif;
+Keywords=paint;draw;picture;image;bitmap;
+StartupWMClass=halcyon-paint

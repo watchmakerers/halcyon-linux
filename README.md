@@ -73,6 +73,9 @@ The ISO lands in `out/`. Test it with
   built-in QML scenes (Aurora, Aqua, Bokeh, Fields) or a looping video of your own; pauses on battery.
 - **Calculator** (`halcyon-calc`): Standard (left to right, repeated =, Windows-style %) and Scientific (precedence,
   parentheses, Inv/Hyp, degrees/radians/grads, Hex/Dec/Oct/Bin with 64-bit And/Or/Xor/Not/Lsh), exact decimal maths.
+- **Paint** (`halcyon-paint`): Vista's Paint: all sixteen tools (free-form and rectangle select, eraser, fill, pick
+  colour, magnifier, pencil, brush, airbrush, text, line, curve, rectangle, polygon, ellipse, rounded rectangle) with
+  the options box, the colour box, zoom with a pixel grid, canvas resize handles, flip/rotate, resize/skew, undo.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
