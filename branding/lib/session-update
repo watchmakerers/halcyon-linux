@@ -24,3 +24,35 @@ if (( done_ver < 1 )); then
     fi
     kwriteconfig6 --file halcyonrc --group Migrations --key done 1
 fi
+
+if (( done_ver < 2 )); then
+    # 2026.11: Halcyon's own clock (calendar flyout, extra time zones) and volume
+    # flyout (with the mixer) replace Plasma's on the taskbar.
+    script='
+panels().forEach(function (p) {
+  var clocks = p.widgets("org.kde.plasma.digitalclock");
+  if (clocks.length && !p.widgets("org.halcyon.clock").length) {
+    var shows = p.widgets("org.kde.plasma.showdesktop");
+    clocks.forEach(function (w) { w.remove(); });
+    shows.forEach(function (w) { w.remove(); });
+    p.addWidget("org.halcyon.clock");
+    if (shows.length) p.addWidget("org.kde.plasma.showdesktop");   // keep it at the end, after the clock
+  }
+  p.widgets("org.kde.plasma.systemtray").forEach(function (t) {
+    t.currentConfigGroup = ["General"];
+    var split = function (v) { return String(v || "").split(",").filter(function (x) { return x; }); };
+    var extra = split(t.readConfig("extraItems")).filter(function (x) { return x != "org.kde.plasma.volume"; });
+    var known = split(t.readConfig("knownItems"));
+    if (extra.indexOf("org.halcyon.volume") < 0) extra.push("org.halcyon.volume");
+    ["org.kde.plasma.volume", "org.halcyon.volume"].forEach(function (x) { if (known.indexOf(x) < 0) known.push(x); });
+    t.writeConfig("extraItems", extra);
+    t.writeConfig("knownItems", known);
+  });
+});'
+    for _ in {1..20}; do
+        dbus-send --session --print-reply=literal --dest=org.kde.plasmashell /PlasmaShell \
+            org.kde.PlasmaShell.evaluateScript "string:$script" >/dev/null 2>&1 && break
+        sleep 0.5
+    done
+    kwriteconfig6 --file halcyonrc --group Migrations --key done 2
+fi

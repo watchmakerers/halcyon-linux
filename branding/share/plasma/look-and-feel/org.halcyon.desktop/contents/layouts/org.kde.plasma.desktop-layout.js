@@ -20,8 +20,18 @@ tasks.writeConfig("launchers", [
     "applications:systemsettings.desktop"
 ]);
 panel.addWidget("org.kde.plasma.marginsseparator");
-panel.addWidget("org.kde.plasma.systemtray");
-panel.addWidget("org.kde.plasma.digitalclock");
+var tray = panel.addWidget("org.kde.plasma.systemtray");
+// Halcyon's Vista-style volume flyout instead of Plasma's; the stock one is
+// listed as known so the tray doesn't add it back by itself.
+var trayItems = ["org.kde.kscreen", "org.kde.plasma.battery", "org.kde.plasma.bluetooth",
+                 "org.kde.plasma.brightness", "org.kde.plasma.cameraindicator", "org.kde.plasma.clipboard",
+                 "org.kde.plasma.devicenotifier", "org.kde.plasma.keyboardlayout",
+                 "org.kde.plasma.manage-inputmethod", "org.kde.plasma.mediacontroller",
+                 "org.kde.plasma.networkmanagement", "org.kde.plasma.notifications", "org.halcyon.volume"];
+tray.currentConfigGroup = ["General"];
+tray.writeConfig("extraItems", trayItems);
+tray.writeConfig("knownItems", trayItems.concat(["org.kde.plasma.volume"]));
+panel.addWidget("org.halcyon.clock");                  // Vista-style clock with the calendar flyout
 panel.addWidget("org.kde.plasma.showdesktop");
 
 var desktopsArray = desktopsForActivity(currentActivity());

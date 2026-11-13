@@ -69,6 +69,9 @@ The ISO lands in `out/`. Test it with
 - **Backup and Restore Center** (`halcyon-backup`): back up Pictures, Music, Videos, Documents, Desktop, e-mail or
   the whole home folder to another drive on a schedule (rsync snapshots: every backup is complete, unchanged files
   share space), restore files from any date, and create restore points when Snapper or Timeshift is installed.
+- **Taskbar clock and volume**: Vista-style flyouts replace Plasma's. The clock opens a calendar, an analog clock and
+  up to two more time zones; the speaker opens a volume slider and a per-program mixer. Existing desktops switch
+  over once at login.
 - **DreamScene** (wallpaper plugin `org.halcyon.dreamscene`): animated wallpapers, after Vista Ultimate's: four
   built-in QML scenes (Aurora, Aqua, Bokeh, Fields) or a looping video of your own; pauses on battery.
 - **Calculator** (`halcyon-calc`): Standard (left to right, repeated =, Windows-style %) and Scientific (precedence,
