@@ -61,6 +61,9 @@ The ISO lands in `out/`. Test it with
 - **Control Panel** (`halcyon-control`): Vista's Category View over System Settings: green category headings
   with common tasks, category pages, Classic View and search. Only tasks available on this computer are shown;
   each opens the right settings page or Halcyon tool.
+- **Network and Sharing Center** (`halcyon-network`): Vista's network map (this computer → network → Internet,
+  with a red X where it breaks), connection status with live activity, Sharing and Discovery switches (network
+  discovery, file sharing, firewall) and a plain-language Diagnose and repair.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Halcyon Network and Sharing Center (--diagnose opens Diagnose and repair).
+here=/usr/share/halcyon-network
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../network   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_network.app "$@"

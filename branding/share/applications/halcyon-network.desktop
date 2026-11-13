@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Network and Sharing Center
+GenericName=Network Status
+Comment=Check your network status, change sharing settings and fix connection problems
+Exec=halcyon-network
+Icon=network-workgroup
+Categories=Settings;Network;
+Keywords=network;internet;wifi;wireless;ethernet;sharing;firewall;diagnose;troubleshoot;
+StartupWMClass=halcyon-network
+Actions=Diagnose;
+
+[Desktop Action Diagnose]
+Name=Diagnose and repair
+Exec=halcyon-network --diagnose
