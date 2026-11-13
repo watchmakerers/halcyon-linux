@@ -227,11 +227,6 @@ class Table(QWidget):
                    f"Level {w.index + 1}: {w.name}")
         p.drawText(QRectF(BW.W - 416, 8, 400, 24), Qt.AlignRight | Qt.AlignVCenter,
                    f"Score {self.win.score + w.points}")
-        for i in range(BW.LIVES):                      # lives as small glowing dots
-            on = i < w.lives
-            p.setPen(Qt.NoPen)
-            p.setBrush(QColor(255, 120, 150, 230) if on else QColor(255, 255, 255, 40))
-            p.drawEllipse(QPointF(BW.W / 2 - 18 + i * 18, 20), 6, 6)
 
     def _banner(self, p, text):
         f = QFont(self.font())
@@ -352,8 +347,10 @@ class GlowBounce(common.GameWindow):
     def _status(self):
         w = self.world
         if w:
-            self.status.setText(f"Lines: {len(w.lines)} of {BW.MAX_LINES}   ·   balls left: {len(w.balls)}"
-                                f"   ·   time {int(w.time)} s")
+            # lives live down here: pockets sit near every edge of the table
+            lives = "♥ " * w.lives + "♡ " * (BW.LIVES - w.lives)
+            self.status.setText(f"Lives: {lives.strip()}   ·   lines: {len(w.lines)} of {BW.MAX_LINES}"
+                                f"   ·   balls left: {len(w.balls)}   ·   time {int(w.time)} s")
 
     def _fill_levels(self):
         self.levels_menu.clear()
