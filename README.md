@@ -64,6 +64,8 @@ The ISO lands in `out/`. Test it with
 - **Network and Sharing Center** (`halcyon-network`): Vista's network map (this computer → network → Internet,
   with a red X where it breaks), connection status with live activity, Sharing and Discovery switches (network
   discovery, file sharing, firewall) and a plain-language Diagnose and repair.
+- **Performance Rating** (`halcyon-experience`): Vista's Experience Index. Rates the processor, memory, desktop
+  and gaming graphics (OpenGL) and the home disk from 1.0 to 5.9; the base score is the lowest subscore.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside

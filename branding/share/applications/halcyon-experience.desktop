@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Performance Rating
+GenericName=Performance Information and Tools
+Comment=Rate your computer's processor, memory, graphics and disk from 1.0 to 5.9
+Exec=halcyon-experience
+Icon=utilities-system-monitor
+Categories=System;Monitor;
+Keywords=experience index;benchmark;score;performance;rating;speed;
+StartupWMClass=halcyon-experience

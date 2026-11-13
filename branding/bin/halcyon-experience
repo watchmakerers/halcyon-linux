@@ -1,0 +1,7 @@
+#!/bin/sh
+# Halcyon Performance Rating (Vista's Experience Index).
+#   halcyon-experience            the window      --rate   start rating right away
+#   halcyon-experience --score    print the saved base score
+here=/usr/share/halcyon-experience
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../experience   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_experience.app "$@"

@@ -135,7 +135,7 @@ package() {
     for f in halcyon-install halcyon-mode halcyon-keys halcyon-gaming halcyon-dev \
              halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-colors halcyon-update \
              halcyon-games halcyon-osk halcyon-gadgets halcyon-messenger halcyon-mediacenter \
-             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
+             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-experience halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
         install -Dm755 "$startdir/bin/$f" "$pkgdir/usr/bin/$f"
     done
     ln -s halcyon-navigator "$pkgdir/usr/bin/halcyon-retro-browser"    # its old name
@@ -201,6 +201,10 @@ package() {
     # Network and Sharing Center
     install -d "$share/halcyon-network/halcyon_network"
     install -m644 "$startdir"/../network/halcyon_network/*.py "$share/halcyon-network/halcyon_network/"
+
+    # Performance Rating
+    install -d "$share/halcyon-experience/halcyon_experience"
+    install -m644 "$startdir"/../experience/halcyon_experience/*.py "$share/halcyon-experience/halcyon_experience/"
 
     # Welcome Center
     install -d "$share/halcyon-welcome/halcyon_welcome"
