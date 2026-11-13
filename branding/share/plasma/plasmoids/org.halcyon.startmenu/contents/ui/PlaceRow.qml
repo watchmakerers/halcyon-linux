@@ -22,11 +22,12 @@ MouseArea {
         anchors.fill: parent
         radius: 3
         visible: row.containsMouse
+        // Hex colours (#aarrggbb) so Window Color can recolour them.
         border.color: Qt.rgba(1, 1, 1, 0.55)
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0.85, 0.93, 1, 0.42) }
-            GradientStop { position: 0.5; color: Qt.rgba(0.62, 0.76, 0.88, 0.32) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.55, 0.70, 0.84, 0.42) }
+            GradientStop { position: 0.0; color: "#6bd9edff" }
+            GradientStop { position: 0.5; color: "#529ec2e0" }
+            GradientStop { position: 1.0; color: "#6b8cb3d6" }
         }
         Rectangle {  // inner shine
             anchors.fill: parent; anchors.margins: 1; radius: 2

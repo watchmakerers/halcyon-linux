@@ -243,10 +243,11 @@ TINTED = {
     "orbs": ("plasma/plasmoids/org.halcyon.workspaces", "plasma/plasmoids/org.halcyon.workspaces"),
     "startmenu": ("plasma/plasmoids/org.halcyon.startmenu", "plasma/plasmoids/org.halcyon.startmenu"),
 }
-# Copies where only some files are recoloured: the Start menu keeps its own
-# look, only its orb follows the window colour.
+# Copies where only some files are recoloured: the Start menu's orb and hover
+# highlights follow the window colour; the rest keeps its own look (the red
+# shut-down button stays red).
 TINT_ONLY = {
-    "startmenu": ("contents/ui/OrbArt.qml",),
+    "startmenu": ("contents/ui/OrbArt.qml", "contents/ui/Highlight.qml", "contents/ui/PlaceRow.qml"),
 }
 
 

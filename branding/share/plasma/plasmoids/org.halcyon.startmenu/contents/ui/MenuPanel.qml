@@ -305,15 +305,7 @@ Item {
                     else if (menu.mode === "search") kicker.run("halcyon-search " + menu.shellQuote(search.text))
                     else menu.mode = "home"
                 }
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: 1; radius: 3
-                    visible: footRow.containsMouse
-                    border.color: "#84b9ea"
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "#f4faff" }
-                        GradientStop { position: 1; color: "#d3e9fc" }
-                    }
-                }
+                Highlight { visible: footRow.containsMouse }
                 Triangle {
                     id: footTri
                     visible: menu.mode !== "search"

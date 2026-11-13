@@ -20,18 +20,7 @@ MouseArea {
     acceptedButtons: Qt.LeftButton | Qt.RightButton
     onClicked: (m) => m.button === Qt.RightButton ? contextRequested(m.x, m.y) : activated()
 
-    // Vista's pale-blue selection
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: 1
-        radius: 3
-        visible: row.containsMouse || row.current
-        border.color: "#84b9ea"
-        gradient: Gradient {
-            GradientStop { position: 0; color: "#f4faff" }
-            GradientStop { position: 1; color: "#d3e9fc" }
-        }
-    }
+    Highlight { visible: row.containsMouse || row.current }
 
     Kirigami.Icon {
         id: ic
