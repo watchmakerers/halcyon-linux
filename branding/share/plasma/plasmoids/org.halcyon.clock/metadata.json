@@ -1,0 +1,14 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [{ "Name": "Halcyon Linux" }],
+        "Category": "Date and Time",
+        "Description": "Vista-style taskbar clock with a calendar, an analog clock and extra time zones",
+        "Icon": "preferences-system-time",
+        "Id": "org.halcyon.clock",
+        "License": "GPL-3.0-or-later",
+        "Name": "Clock and Calendar",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
