@@ -1,0 +1,5 @@
+#!/bin/sh
+# Halcyon Glow Bounce: steer glowing balls into their pockets with lines of light.
+here=/usr/share/halcyon-arcade
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../arcade   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_arcade.bounce "$@"

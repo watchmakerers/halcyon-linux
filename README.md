@@ -181,7 +181,8 @@ Under **Games** in the app menu (kept out of Halcyon Games): **Solitaire** (Klon
 **Spider** one/two/four suits, **FreeCell** with the classic numbered deals), **Hearts** (passing,
 shooting the moon, three computer players that duck, unload the Queen and block moon attempts), **Mines**, **Chess** (rules
 engine checked with perft, a four-level computer opponent, or two players) and **Tiles** (the 144-tile
-turtle, every deal solvable). Cards, pieces and tiles are all drawn in code; statistics, options and
+turtle, every deal solvable) and **Glow Bounce** (an original game: draw short lines of light to steer glowing balls
+into pockets of their colour, past walls, sliding blocks, one-way gates and repainting tiles, over twelve levels). Cards, pieces and tiles are all drawn in code; statistics, options and
 an unfinished chess game live in `~/.local/share/halcyon/games/`. Code: `arcade/halcyon_arcade/`.
 
 ## Media Center

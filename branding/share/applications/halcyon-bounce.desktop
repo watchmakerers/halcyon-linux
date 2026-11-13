@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Glow Bounce
+GenericName=Puzzle Game
+Comment=Draw lines of light to steer glowing balls into pockets of their colour
+Exec=halcyon-bounce
+Icon=applications-games
+Categories=Game;ArcadeGame;
+Keywords=puzzle;balls;bounce;light;arcade;
+StartupWMClass=halcyon-bounce
