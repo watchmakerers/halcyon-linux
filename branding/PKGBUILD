@@ -8,7 +8,8 @@ license=(GPL-3.0-or-later)
 depends=(plasma-workspace kwin sddm plymouth oxygen oxygen-icons adobe-source-sans-fonts breeze-gtk konsole
          kdialog yakuake qt6-declarative pciutils polkit udisks2 pyside6 python-evdev xorg-xwayland
          qt6-webengine libx11 msitools qt6-multimedia qt6-multimedia-ffmpeg qt6-imageformats
-         cabextract 7zip ffmpeg python-mutagen rsync)
+         cabextract 7zip ffmpeg python-mutagen rsync
+         adobe-source-han-sans-otc-fonts)
 makedepends=(python librsvg imagemagick ffmpeg)
 install=halcyon-branding.install
 _krohnkite=0.9.9.2
@@ -95,6 +96,10 @@ package() {
         install -Dm644 "$startdir/etc/xdg/$f" "$pkgdir/etc/xdg/$f"
     done
     install -Dm644 "$gen/kdeglobals" "$pkgdir/etc/xdg/kdeglobals"
+    # Chinese, Japanese and Korean text in Source Han Sans (fontconfig's hook links conf.default into /etc/fonts/conf.d)
+    install -Dm644 "$startdir/fontconfig/64-halcyon-cjk.conf" "$pkgdir/usr/share/fontconfig/conf.avail/64-halcyon-cjk.conf"
+    install -d "$pkgdir/usr/share/fontconfig/conf.default"
+    ln -s ../conf.avail/64-halcyon-cjk.conf "$pkgdir/usr/share/fontconfig/conf.default/64-halcyon-cjk.conf"
 
     # Logo
     install -Dm644 "$gen/logo-512.png" "$share/pixmaps/halcyon-logo.png"
