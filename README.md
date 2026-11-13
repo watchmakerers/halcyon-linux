@@ -173,7 +173,8 @@ gadget console output); `gadgets/test/LegacyTest` is a compatibility test gadget
 ## Games pack
 
 Under **Games** in the app menu (kept out of Halcyon Games): **Solitaire** (Klondike draw one/three,
-**Spider** one/two/four suits, **FreeCell** with the classic numbered deals), **Mines**, **Chess** (rules
+**Spider** one/two/four suits, **FreeCell** with the classic numbered deals), **Hearts** (passing,
+shooting the moon, three computer players that duck, unload the Queen and block moon attempts), **Mines**, **Chess** (rules
 engine checked with perft, a four-level computer opponent, or two players) and **Tiles** (the 144-tile
 turtle, every deal solvable). Cards, pieces and tiles are all drawn in code; statistics, options and
 an unfinished chess game live in `~/.local/share/halcyon/games/`. Code: `arcade/halcyon_arcade/`.

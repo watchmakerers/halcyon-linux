@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Hearts
+GenericName=Card Game
+Comment=Avoid hearts and the Queen of spades, or take them all and shoot the moon
+Exec=halcyon-hearts
+Icon=kpat
+Categories=Game;CardGame;
+Keywords=cards;hearts;queen;moon;
+StartupWMClass=halcyon-hearts
