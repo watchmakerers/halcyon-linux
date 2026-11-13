@@ -1,0 +1,7 @@
+#!/bin/sh
+# Halcyon Backup and Restore Center.
+#   halcyon-backup          the window
+#   halcyon-backup --run    back up now with the saved settings (what the schedule runs)
+here=/usr/share/halcyon-backup
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../backup   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_backup.app "$@"

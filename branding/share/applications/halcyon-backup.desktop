@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Backup and Restore Center
+GenericName=Backup
+Comment=Back up your files to another drive and restore them when you need to
+Exec=halcyon-backup
+Icon=document-save
+Categories=System;Utility;Archiving;
+Keywords=backup;restore;copy;rsync;snapshot;restore point;
+StartupWMClass=halcyon-backup

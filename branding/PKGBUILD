@@ -8,7 +8,7 @@ license=(GPL-3.0-or-later)
 depends=(plasma-workspace kwin sddm plymouth oxygen oxygen-icons adobe-source-sans-fonts breeze-gtk konsole
          kdialog yakuake qt6-declarative pciutils polkit udisks2 pyside6 python-evdev xorg-xwayland
          qt6-webengine libx11 msitools qt6-multimedia qt6-multimedia-ffmpeg qt6-imageformats
-         cabextract 7zip ffmpeg python-mutagen)
+         cabextract 7zip ffmpeg python-mutagen rsync)
 makedepends=(python librsvg imagemagick ffmpeg)
 install=halcyon-branding.install
 _krohnkite=0.9.9.2
@@ -135,7 +135,7 @@ package() {
     for f in halcyon-install halcyon-mode halcyon-keys halcyon-gaming halcyon-dev \
              halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-colors halcyon-update \
              halcyon-games halcyon-osk halcyon-gadgets halcyon-messenger halcyon-mediacenter \
-             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-experience halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
+             halcyon-navigator halcyon-welcome halcyon-control halcyon-network halcyon-experience halcyon-backup halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
         install -Dm755 "$startdir/bin/$f" "$pkgdir/usr/bin/$f"
     done
     ln -s halcyon-navigator "$pkgdir/usr/bin/halcyon-retro-browser"    # its old name
@@ -205,6 +205,10 @@ package() {
     # Performance Rating
     install -d "$share/halcyon-experience/halcyon_experience"
     install -m644 "$startdir"/../experience/halcyon_experience/*.py "$share/halcyon-experience/halcyon_experience/"
+
+    # Backup and Restore Center
+    install -d "$share/halcyon-backup/halcyon_backup"
+    install -m644 "$startdir"/../backup/halcyon_backup/*.py "$share/halcyon-backup/halcyon_backup/"
 
     # Welcome Center
     install -d "$share/halcyon-welcome/halcyon_welcome"

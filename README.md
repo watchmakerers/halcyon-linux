@@ -66,6 +66,9 @@ The ISO lands in `out/`. Test it with
   discovery, file sharing, firewall) and a plain-language Diagnose and repair.
 - **Performance Rating** (`halcyon-experience`): Vista's Experience Index. Rates the processor, memory, desktop
   and gaming graphics (OpenGL) and the home disk from 1.0 to 5.9; the base score is the lowest subscore.
+- **Backup and Restore Center** (`halcyon-backup`): back up Pictures, Music, Videos, Documents, Desktop, e-mail or
+  the whole home folder to another drive on a schedule (rsync snapshots: every backup is complete, unchanged files
+  share space), restore files from any date, and create restore points when Snapper or Timeshift is installed.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
