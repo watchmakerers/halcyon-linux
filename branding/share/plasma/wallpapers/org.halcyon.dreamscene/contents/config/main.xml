@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <!-- aurora, aqua, bokeh, fields, or video -->
+    <entry name="Scene" type="String">
+      <default>aurora</default>
+    </entry>
+    <entry name="VideoFile" type="String">
+      <default></default>
+    </entry>
+    <!-- 25..200: how fast the scenes move, in percent -->
+    <entry name="Speed" type="Int">
+      <default>100</default>
+    </entry>
+    <entry name="PauseOnBattery" type="Bool">
+      <default>true</default>
+    </entry>
+  </group>
+</kcfg>

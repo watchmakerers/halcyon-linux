@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "Plasma/Wallpaper",
+    "KPlugin": {
+        "Authors": [{ "Name": "Halcyon Linux" }],
+        "Category": "",
+        "Description": "Animated wallpapers: gentle built-in scenes or a looping video",
+        "Icon": "preferences-desktop-wallpaper",
+        "Id": "org.halcyon.dreamscene",
+        "License": "GPL-3.0-or-later",
+        "Name": "DreamScene"
+    },
+    "X-KDE-ParentApp": "org.kde.plasmashell"
+}

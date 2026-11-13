@@ -69,6 +69,8 @@ The ISO lands in `out/`. Test it with
 - **Backup and Restore Center** (`halcyon-backup`): back up Pictures, Music, Videos, Documents, Desktop, e-mail or
   the whole home folder to another drive on a schedule (rsync snapshots: every backup is complete, unchanged files
   share space), restore files from any date, and create restore points when Snapper or Timeshift is installed.
+- **DreamScene** (wallpaper plugin `org.halcyon.dreamscene`): animated wallpapers, after Vista Ultimate's: four
+  built-in QML scenes (Aurora, Aqua, Bokeh, Fields) or a looping video of your own; pauses on battery.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
