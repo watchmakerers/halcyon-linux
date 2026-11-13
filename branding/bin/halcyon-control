@@ -1,0 +1,6 @@
+#!/bin/sh
+# Halcyon Control Panel: Vista's Category View over System Settings.
+#   halcyon-control [--classic | system|security|network|hardware|programs|users|appearance|clock|access|more]
+here=/usr/share/halcyon-control
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../control   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_control.app "$@"

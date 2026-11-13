@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Control Panel
+GenericName=System Settings
+Comment=Change settings and customize the functionality of this computer
+Exec=halcyon-control
+Icon=preferences-system
+Categories=Settings;
+Keywords=control panel;settings;preferences;configure;system;
+StartupWMClass=halcyon-control

@@ -135,7 +135,7 @@ package() {
     for f in halcyon-install halcyon-mode halcyon-keys halcyon-gaming halcyon-dev \
              halcyon-disc-install halcyon-autoplay-dialog halcyon-aur halcyon-screensaver halcyon-player halcyon-wintheme halcyon-colors halcyon-update \
              halcyon-games halcyon-osk halcyon-gadgets halcyon-messenger halcyon-mediacenter \
-             halcyon-navigator halcyon-welcome halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
+             halcyon-navigator halcyon-welcome halcyon-control halcyon-mail halcyon-photos halcyon-calendar halcyon-notes halcyon-search halcyon-solitaire halcyon-mines halcyon-chess halcyon-tiles; do
         install -Dm755 "$startdir/bin/$f" "$pkgdir/usr/bin/$f"
     done
     ln -s halcyon-navigator "$pkgdir/usr/bin/halcyon-retro-browser"    # its old name
@@ -193,6 +193,10 @@ package() {
     # Halcyon Mail
     install -d "$share/halcyon-mail/halcyon_mail"
     install -m644 "$startdir"/../mail/halcyon_mail/*.py "$share/halcyon-mail/halcyon_mail/"
+
+    # Control Panel
+    install -d "$share/halcyon-control/halcyon_control"
+    install -m644 "$startdir"/../control/halcyon_control/*.py "$share/halcyon-control/halcyon_control/"
 
     # Welcome Center
     install -d "$share/halcyon-welcome/halcyon_welcome"

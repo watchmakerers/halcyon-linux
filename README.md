@@ -58,6 +58,9 @@ The ISO lands in `out/`. Test it with
   Violet, Lavender, Taupe, Chocolate, Slate, Graphite, Frost), the two-colour **Zune** style (graphite glass with
   orange accents, after the Windows XP Zune theme) or any custom colour. Tiling mode keeps the colour, and
   it's re-applied automatically after Halcyon updates.
+- **Control Panel** (`halcyon-control`): Vista's Category View over System Settings: green category headings
+  with common tasks, category pages, Classic View and search. Only tasks available on this computer are shown;
+  each opens the right settings page or Halcyon tool.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
