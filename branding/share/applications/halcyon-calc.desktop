@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Calculator
+GenericName=Calculator
+Comment=Do arithmetic and scientific calculations
+Exec=halcyon-calc
+Icon=accessories-calculator
+Categories=Utility;Calculator;
+Keywords=calculator;math;arithmetic;scientific;hex;binary;
+StartupWMClass=halcyon-calc

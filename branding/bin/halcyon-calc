@@ -1,0 +1,5 @@
+#!/bin/sh
+# Halcyon Calculator: Standard and Scientific.
+here=/usr/share/halcyon-calc
+[ -d "$here" ] || here=$(dirname "$(readlink -f "$0")")/../../calc   # dev checkout
+PYTHONPATH=$here exec python3 -m halcyon_calc.app "$@"

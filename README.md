@@ -71,6 +71,8 @@ The ISO lands in `out/`. Test it with
   share space), restore files from any date, and create restore points when Snapper or Timeshift is installed.
 - **DreamScene** (wallpaper plugin `org.halcyon.dreamscene`): animated wallpapers, after Vista Ultimate's: four
   built-in QML scenes (Aurora, Aqua, Bokeh, Fields) or a looping video of your own; pauses on battery.
+- **Calculator** (`halcyon-calc`): Standard (left to right, repeated =, Windows-style %) and Scientific (precedence,
+  parentheses, Inv/Hyp, degrees/radians/grads, Hex/Dec/Oct/Bin with 64-bit And/Or/Xor/Not/Lsh), exact decimal maths.
 - **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
   Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
   Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
