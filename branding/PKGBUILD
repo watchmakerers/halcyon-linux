@@ -60,6 +60,10 @@ build() {
     cp "$startdir/../player/skins/halcyon/halcyon.wms" "$sk/"
     for f in "$startdir"/../player/skins/halcyon/*.svg; do rsvg-convert "$f" -o "$sk/$(basename "${f%.svg}").png"; done
     (cd "$sk" && python3 -c "import zipfile,glob; z=zipfile.ZipFile('Halcyon.wmz','w',zipfile.ZIP_DEFLATED); [z.write(f) for f in ['halcyon.wms']+sorted(glob.glob('*.png'))]")
+    # User account pictures: SVG -> 512px PNG
+    local up="$srcdir/userpics"; rm -rf "$up"
+    python3 ../tools/gen_user_pictures.py "$up"
+    for f in "$up"/*.svg; do rsvg-convert -w 512 -h 512 "$f" -o "${f%.svg}.png"; done
     mkdir -p "$srcdir/gen"
     cd "$srcdir/gen"
     rsvg-convert -w 18 -h 18 "$startdir/share/halcyon/orb.svg" -o orb.png
@@ -96,6 +100,11 @@ package() {
     install -Dm644 "$gen/logo-512.png" "$share/pixmaps/halcyon-logo.png"
     for s in 256 128 64 48; do
         install -Dm644 "$gen/logo-$s.png" "$share/icons/hicolor/${s}x${s}/apps/halcyon-logo.png"
+    done
+
+    # User account pictures, next to Plasma's own in the picture chooser
+    for f in "$srcdir"/userpics/*.png; do
+        install -Dm644 "$f" "$share/plasma/avatars/photos/$(basename "$f")"
     done
 
     # Splash screens and greeter

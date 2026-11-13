@@ -58,6 +58,10 @@ The ISO lands in `out/`. Test it with
   Violet, Lavender, Taupe, Chocolate, Slate, Graphite, Frost), the two-colour **Zune** style (graphite glass with
   orange accents, after the Windows XP Zune theme) or any custom colour. Tiling mode keeps the colour, and
   it's re-applied automatically after Halcyon updates.
+- **User pictures**: seventeen Vista-style account pictures (Goldfish, Chess, Beach Ball, Daisy, Butterfly, Rubber Duck,
+  Guitar, Snowflake, Sunset, Dewdrop, Kite, Planet, and skate ones: Skateboard, Half Pipe, High Tops, Helmet,
+  Spray Can), drawn by `tools/gen_user_pictures.py` and offered alongside
+  Plasma's own in System Settings → Users.
 - **Gaming Setup** (`halcyon-gaming`, in the app menu): pick Steam, Wine, Lutris, Heroic, MangoHud, GameMode,
   Gamescope, ProtonUp-Qt, NVIDIA driver, Zen kernel…; installs with your password via pkexec.
 
