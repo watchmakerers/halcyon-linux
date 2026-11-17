@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Bring Wi-Fi back after sleep on machines whose adapter doesn't survive it.
+#
+# Some Wi-Fi drivers/firmware (Intel, MediaTek, Realtek alike) fail to resume:
+# the adapter vanishes or NetworkManager calls it "unavailable" until a reboot.
+# Reloading the driver (and rescanning PCI when the device fell off the bus)
+# brings it back. Run by /usr/lib/systemd/system-sleep/halcyon-wifi:
+#
+#   wifi-resume save    before sleep: remember Wi-Fi interfaces and their drivers
+#   wifi-resume check   after wake: wait for them, reload drivers if they don't return
+#   wifi-resume unload  before sleep, with reload=always: unload the drivers now
+#
+# /etc/halcyon/wifi-sleep.conf (optional):
+#   reload=auto     reload only when Wi-Fi didn't come back (default)
+#   reload=always   unload before every sleep and load after, for hardware that
+#                   hangs without visibly disappearing
+#   reload=off      do nothing
+set -uo pipefail
+state=/run/halcyon/wifi-sleep
+mode=auto
+[[ -r /etc/halcyon/wifi-sleep.conf ]] &&
+    mode=$(sed -n 's/^[[:space:]]*reload[[:space:]]*=[[:space:]]*\([a-z]*\).*/\1/p' /etc/halcyon/wifi-sleep.conf | tail -1)
+mode=${mode:-auto}
+log() { echo "halcyon-wifi: $*"; }
+
+save() {
+    mkdir -p "${state%/*}"
+    : >"$state"
+    local dev mod
+    for dev in /sys/class/net/*; do
+        [[ -d $dev/wireless || -d $dev/phy80211 ]] || continue
+        mod=$(basename "$(readlink -f "$dev/device/driver/module")" 2>/dev/null) || continue
+        [[ -n $mod && $mod != module ]] && printf '%s %s\n' "${dev##*/}" "$mod" >>"$state"
+    done
+}
+
+# Modules using $1 (iwlmvm holds iwlwifi), deepest first, then $1 itself.
+stack() {
+    local h
+    for h in /sys/module/"$1"/holders/*; do
+        [[ -e $h ]] && stack "${h##*/}"
+    done
+    echo "$1"
+}
+
+unload() {  # unload MODULE...: remember the full stacks, then remove them
+    local m s
+    for m in "$@"; do
+        s=$(stack "$m" | awk '!seen[$0]++')
+        echo "$s" >>"$state.modules"
+        # shellcheck disable=SC2086
+        modprobe -r $s 2>/dev/null || log "could not unload $m"
+    done
+}
+
+load() {
+    [[ -f $state.modules ]] || return 0
+    echo 1 >/sys/bus/pci/rescan 2>/dev/null || true
+    # Load the bottom of each stack first (iwlwifi before iwlmvm).
+    tac "$state.modules" | awk '!seen[$0]++' | while read -r m; do modprobe "$m" 2>/dev/null || log "could not load $m"; done
+    rm -f "$state.modules"
+}
+
+healthy() {  # every saved interface exists and NetworkManager can use it
+    local ifc mod st
+    [[ $(nmcli -g WIFI radio 2>/dev/null) == disabled ]] && return 0   # Wi-Fi switched off on purpose
+    while read -r ifc mod; do
+        [[ -e /sys/class/net/$ifc ]] || return 1
+        st=$(nmcli -g GENERAL.STATE device show "$ifc" 2>/dev/null)
+        [[ $st == 20* ]] && return 1   # 20 = unavailable
+    done <"$state"
+    return 0
+}
+
+case ${1:-} in
+    save)
+        [[ $mode == off ]] && exit 0
+        save
+        ;;
+    unload)
+        [[ $mode == always && -s $state ]] || exit 0
+        rm -f "$state.modules"
+        # shellcheck disable=SC2046
+        unload $(awk '{print $2}' "$state" | sort -u)
+        ;;
+    check)
+        [[ $mode == off || ! -s $state ]] && exit 0
+        load   # reload=always: put back what "unload" took out
+        for _ in $(seq 15); do healthy && exit 0; sleep 1; done
+        log "Wi-Fi did not come back after sleep; reloading its driver"
+        rm -f "$state.modules"
+        # shellcheck disable=SC2046
+        unload $(awk '{print $2}' "$state" | sort -u)
+        sleep 1
+        load
+        for _ in $(seq 15); do healthy && { log "Wi-Fi is back"; exit 0; }; sleep 1; done
+        log "Wi-Fi still missing after reloading the driver"
+        exit 1
+        ;;
+    *) echo "usage: wifi-resume save|unload|check" >&2; exit 2 ;;
+esac

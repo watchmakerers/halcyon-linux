@@ -280,6 +280,9 @@ package() {
     # pacman hook against the installed KWin, and again after every KWin/Qt upgrade.
     install -Dm644 "$srcdir/kde-rounded-corners-$_corners.tar.gz" "$share/halcyon/src/kde-rounded-corners.tar.gz"
     install -Dm755 "$startdir/lib/build-rounded-corners" "$pkgdir/usr/lib/halcyon/build-rounded-corners"
+    # Wi-Fi that doesn't survive sleep: reload its driver on wake (lib/wifi-resume).
+    install -Dm755 "$startdir/lib/wifi-resume" "$pkgdir/usr/lib/halcyon/wifi-resume"
+    install -Dm755 "$startdir/systemd-sleep/halcyon-wifi" "$pkgdir/usr/lib/systemd/system-sleep/halcyon-wifi"
     install -Dm644 "$startdir/hooks/halcyon-rounded-corners.hook" "$share/libalpm/hooks/halcyon-rounded-corners.hook"
     install -Dm644 "$startdir/hooks/halcyon-rounded-corners-remove.hook" "$share/libalpm/hooks/halcyon-rounded-corners-remove.hook"
     install -Dm755 "$startdir/lib/apply-os-release" "$pkgdir/usr/lib/halcyon/apply-os-release"
