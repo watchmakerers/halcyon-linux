@@ -108,21 +108,39 @@ deco() {
     fi
 }
 
-# Rounded window corners (kwin-effect-rounded-corners), on in tiling mode only:
-# classic mode's Aero frames already have their own rounded tops.
-CORNERS=kwin4_effect_shapecorners
-corners() {  # corners true|false
-    cfg --file kwinrc --group Plugins --key "${CORNERS}Enabled" "$1"
+# Tiling-mode effects, Omarchy-style:
+#   kwin4_effect_shapecorners      rounded window corners (built by lib/build-rounded-corners);
+#                                  classic mode's Aero frames already round their tops
+#   kwin4_effect_geometry_change   windows glide into their new tile instead of jumping
+TILING_EFFECTS=(kwin4_effect_shapecorners kwin4_effect_geometry_change)
+effect_on() {  # effect_on true|false <effect>
+    cfg --file kwinrc --group Plugins --key "${2}Enabled" "$1"
+    local m=unloadEffect; [[ $1 == true ]] && m=loadEffect
+    dbus org.kde.KWin /Effects org.kde.kwin.Effects.$m "string:$2" >/dev/null 2>&1 || true
+}
+tiling_effects() {  # tiling_effects true|false
+    local e
+    for e in "${TILING_EFFECTS[@]}"; do effect_on "$1" "$e"; done
     if [[ $1 == true ]]; then
-        dbus org.kde.KWin /Effects org.kde.kwin.Effects.loadEffect "string:$CORNERS" >/dev/null 2>&1 || true
+        cfg --file kwinrc --group Effect-kwin4_effect_geometry_change --key Duration 250
+        # Windows pop in/out from 87% (Hyprland "popin 87%") instead of Plasma's 80%.
+        cfg --file kwinrc --group Effect-scale --key InScale 0.87
+        cfg --file kwinrc --group Effect-scale --key OutScale 0.87
     else
-        dbus org.kde.KWin /Effects org.kde.kwin.Effects.unloadEffect "string:$CORNERS" >/dev/null 2>&1 || true
+        cfg --file kwinrc --group Effect-scale --key InScale --delete
+        cfg --file kwinrc --group Effect-scale --key OutScale --delete
+    fi
+    # The scale effect reads its settings when it loads.
+    dbus org.kde.KWin /Effects org.kde.kwin.Effects.reconfigureEffect string:scale >/dev/null 2>&1 || true
+    if [[ $1 == true ]] && ! dbus org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded \
+            string:kwin4_effect_shapecorners 2>/dev/null | grep -q true; then
+        echo "halcyon-mode: rounded corners did not load; rebuild with: sudo /usr/lib/halcyon/build-rounded-corners --force (then log out and in)" >&2
     fi
 }
 
 tiling() {
     cfg --file halcyonrc --group Mode --key current tiling
-    corners true
+    tiling_effects true
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled true
     cfg --file kwinrc --group Script-krohnkite --key screenGapTop 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapBottom 8
@@ -162,7 +180,7 @@ tiling() {
 
 classic() {
     cfg --file halcyonrc --group Mode --key current classic
-    corners false
+    tiling_effects false
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled false
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:krohnkite >/dev/null || true
     release_windows

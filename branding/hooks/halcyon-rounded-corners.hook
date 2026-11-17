@@ -1,0 +1,14 @@
+# Rebuild the rounded corners effect whenever KWin or Qt changes: a KWin effect
+# only loads in the exact version it was compiled for.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = kwin
+Target = qt6-base
+Target = halcyon-branding
+
+[Action]
+Description = Building rounded window corners for the installed KWin...
+When = PostTransaction
+Exec = /usr/lib/halcyon/build-rounded-corners

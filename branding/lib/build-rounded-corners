@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Build the rounded window corners effect (KDE-Rounded-Corners) for the KWin
+# that is installed right now, and install it.
+#
+# A KWin effect plugin only loads in the exact KWin version it was compiled
+# against ("built for a different version of KWin"), and distro packages of it
+# lag behind KWin updates. So Halcyon ships the source and a pacman hook runs
+# this after every KWin/Qt upgrade, like DKMS does for kernel modules.
+#
+#   build-rounded-corners            build if KWin/Qt/the source changed
+#   build-rounded-corners --force    rebuild regardless
+#   build-rounded-corners --remove   delete the installed files
+set -euo pipefail
+src=/usr/share/halcyon/src/kde-rounded-corners.tar.gz
+state=/var/lib/halcyon/rounded-corners
+
+remove() {
+    [[ -f $state/manifest ]] || return 0
+    local f
+    while IFS= read -r f; do
+        [[ $f == /usr/* ]] && rm -f -- "$f"
+    done <"$state/manifest"
+    rm -f "$state/manifest" "$state/built-for"
+}
+
+if [[ ${1:-} == --remove ]]; then remove; exit 0; fi
+[[ $EUID -eq 0 ]] || { echo "build-rounded-corners: run as root" >&2; exit 1; }
+
+stamp="$(pacman -Q kwin qt6-base | tr '\n' ' ')$(sha256sum <"$src" | cut -d' ' -f1)"
+if [[ ${1:-} != --force && -f $state/built-for && $(<"$state/built-for") == "$stamp" ]]; then
+    exit 0
+fi
+
+work=$(mktemp -d -p /var/tmp halcyon-corners.XXXXXX)
+trap 'rm -rf "$work"' EXIT
+tar xzf "$src" -C "$work" --strip-components=1
+chown -R nobody: "$work"
+
+# Compile unprivileged; only the install step runs as root.
+as_nobody() { setpriv --reuid=nobody --regid=nobody --clear-groups --reset-env -- "$@"; }
+if ! as_nobody cmake -S "$work" -B "$work/build" -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -Wno-dev >"$work/log" 2>&1 ||
+   ! as_nobody cmake --build "$work/build" -j"$(nproc)" >>"$work/log" 2>&1; then
+    echo "Rounded corners: build failed for $(pacman -Q kwin). Last lines of the log:" >&2
+    tail -n 25 "$work/log" >&2
+    exit 1
+fi
+
+remove
+cmake --install "$work/build" >>"$work/log" 2>&1
+mkdir -p "$state"
+cp "$work/build/install_manifest.txt" "$state/manifest"
+printf '%s' "$stamp" >"$state/built-for"
+echo "Rounded corners built for $(pacman -Q kwin). Takes effect at next login."

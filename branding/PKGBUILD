@@ -9,17 +9,29 @@ depends=(plasma-workspace kwin sddm plymouth oxygen oxygen-icons adobe-source-sa
          kdialog yakuake qt6-declarative pciutils polkit udisks2 pyside6 python-evdev xorg-xwayland
          qt6-webengine libx11 msitools qt6-multimedia qt6-multimedia-ffmpeg qt6-imageformats
          cabextract 7zip ffmpeg python-mutagen rsync
-         adobe-source-han-sans-otc-fonts)
+         adobe-source-han-sans-otc-fonts
+         # rounded corners effect, compiled on the machine for its KWin (lib/build-rounded-corners)
+         cmake extra-cmake-modules gcc make kcmutils kconfigwidgets ki18n libepoxy libxcb gettext)
+# Halcyon builds the rounded corners effect itself, matched to the installed KWin.
+provides=(kwin-effect-rounded-corners)
+conflicts=(kwin-effect-rounded-corners)
+replaces=(kwin-effect-rounded-corners)
 makedepends=(python librsvg imagemagick ffmpeg)
 install=halcyon-branding.install
 _krohnkite=0.9.9.2
 _otvdm=0.9.0
 _ruffle=0.7.1
+_geometry_change=1.5
+_corners=0.11.0
 source=("krohnkite-$_krohnkite.kwinscript::https://github.com/anametologin/krohnkite/releases/download/$_krohnkite/krohnkite.kwinscript"
+        "geometry-change-$_geometry_change.tar.gz::https://github.com/peterfajdiga/kwin4_effect_geometry_change/releases/download/v$_geometry_change/kwin4_effect_geometry_change_${_geometry_change//./_}.tar.gz"
+        "kde-rounded-corners-$_corners.tar.gz::https://github.com/matinlotfali/KDE-Rounded-Corners/archive/refs/tags/v$_corners.tar.gz"
         "otvdm-$_otvdm.zip::https://github.com/otya128/winevdm/releases/download/v$_otvdm/otvdm-v$_otvdm.zip"
         "ruffle-$_ruffle.tgz::https://registry.npmjs.org/@ruffle-rs/ruffle/-/ruffle-$_ruffle.tgz")
-noextract=("krohnkite-$_krohnkite.kwinscript" "otvdm-$_otvdm.zip" "ruffle-$_ruffle.tgz")
+noextract=("krohnkite-$_krohnkite.kwinscript" "geometry-change-$_geometry_change.tar.gz" "kde-rounded-corners-$_corners.tar.gz" "otvdm-$_otvdm.zip" "ruffle-$_ruffle.tgz")
 sha256sums=('42f7f66531d366c74b5fc860381da3517ccb4cdccd1f80c122fcab6e9a8fcf7e'
+            '76651a24465f83c832eb96dc9d34b3ac12c75d1b71298c2ac461a8a4b2cc0850'
+            '73833c9835262ad212075539edad771af75adc5be62ef027e55e09da2b97f0cb'
             '842b11aed5fa81f3e1d4272e0ee7d37f1a5a8f936de825309dda672835e16fd4'
             'dc9e7407549a91accc41a14932b0b9d9a9d51a3742ce6f020888c8a76682b157')
 
@@ -260,6 +272,16 @@ package() {
     install -d "$share/kwin/scripts/krohnkite"
     bsdtar -xf "$srcdir/krohnkite-$_krohnkite.kwinscript" -C "$share/kwin/scripts/krohnkite"
     bash "$startdir/lib/patch-krohnkite" "$share/kwin/scripts/krohnkite"
+    # Geometry Change effect (GPL-3.0): animates windows sliding/resizing into their
+    # tiles, Hyprland-style; halcyon-mode turns it on in tiling mode.
+    install -d "$share/kwin/effects"
+    bsdtar -xf "$srcdir/geometry-change-$_geometry_change.tar.gz" -C "$share/kwin/effects"
+    # Rounded corners (KDE-Rounded-Corners, GPL-3.0): shipped as source, compiled by a
+    # pacman hook against the installed KWin, and again after every KWin/Qt upgrade.
+    install -Dm644 "$srcdir/kde-rounded-corners-$_corners.tar.gz" "$share/halcyon/src/kde-rounded-corners.tar.gz"
+    install -Dm755 "$startdir/lib/build-rounded-corners" "$pkgdir/usr/lib/halcyon/build-rounded-corners"
+    install -Dm644 "$startdir/hooks/halcyon-rounded-corners.hook" "$share/libalpm/hooks/halcyon-rounded-corners.hook"
+    install -Dm644 "$startdir/hooks/halcyon-rounded-corners-remove.hook" "$share/libalpm/hooks/halcyon-rounded-corners-remove.hook"
     install -Dm755 "$startdir/lib/apply-os-release" "$pkgdir/usr/lib/halcyon/apply-os-release"
     install -Dm644 "$startdir/hooks/halcyon-os-release.hook" "$share/libalpm/hooks/halcyon-os-release.hook"
     install -Dm644 "$startdir/desktop-packages.txt" "$share/halcyon/desktop-packages.txt"

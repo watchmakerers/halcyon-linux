@@ -21,8 +21,49 @@ sed -i 's/if (typeof this.workspace === "undefined")$/if (typeof this.workspace 
 sed -i 's/^        if (this.entered)$/        if (this.entered || HALCYON_STOPPED)/' "$js"
 sed -i 's/^    Component.onCompleted: {$/    Component.onDestruction: K.halcyonStop();\n\n&/' "$qml"
 
+# Super+J: cycle a shorter list of layouts than Next Layout (Super+L, all of
+# them). The list is the Script-krohnkite key halcyonCycle in kwinrc,
+# comma-separated layout ids; layouts turned off in Krohnkite are skipped.
+shortcuts=$d/contents/ui/shortcuts.qml
+sed -i 's/^    ToggleDock: 32,$/&\n    HalcyonCycle: 1001,/' "$js"
+sed -i 's/^            case Shortcut.NextLayout:$/            case Shortcut.HalcyonCycle:\
+                this.engine.halcyonCycle(ctx);\
+                break;\
+&/' "$js"
+sed -i '0,/^    cycleLayout(ctx, step) {$/s//    halcyonCycle(ctx) {\
+        if (ctx.currentSurface.ignore)\
+            return;\
+        const ids = String(KWIN.readConfig("halcyonCycle", "TileLayout,SpiralLayout,Columns,ThreeColumnLayout,BTreeLayout,QuarterLayout,StackedLayout,MonocleLayout"))\
+            .split(",").map((id) => id.trim()).filter((id) => CONFIG.layoutFactories[id]);\
+        if (ids.length === 0)\
+            return;\
+        const current = this.layouts.getEntry(ctx.currentSurface).currentID;\
+        this.setLayout(ctx, ids[(ids.indexOf(current) + 1) % ids.length]);\
+    }\
+&/' "$js"
+sed -i 's/^            \.activated\.connect(callbackShortcut(Shortcut\.Rotate));$/&\
+        this.shortcuts\
+            .getHalcyonCycle()\
+            .activated.connect(callbackShortcut(Shortcut.HalcyonCycle));/' "$js"
+sed -i 's/^    function getRotate() {$/    function getHalcyonCycle() {\
+        return halcyonCycle;\
+    }\
+    ShortcutHandler {\
+        id: halcyonCycle;\
+\
+        name: "KrohnkiteHalcyonCycle";\
+        text: "Krohnkite: Cycle Favorite Layouts";\
+        sequence: "Meta+J";\
+    }\
+&/' "$shortcuts"
+
 # Fail the build if a Krohnkite update moved the code we patch.
 grep -q 'function halcyonStop' "$js"
 grep -q '=== "undefined" || HALCYON_STOPPED' "$js"
 grep -q 'this.entered || HALCYON_STOPPED' "$js"
 grep -q 'K.halcyonStop()' "$qml"
+grep -q 'HalcyonCycle: 1001' "$js"
+grep -q 'case Shortcut.HalcyonCycle:' "$js"
+grep -q '^    halcyonCycle(ctx) {' "$js"
+grep -q 'getHalcyonCycle()' "$js"
+grep -q 'name: "KrohnkiteHalcyonCycle"' "$shortcuts"

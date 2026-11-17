@@ -67,7 +67,8 @@ BINDINGS = [
 
     # --- tiling mode (Krohnkite; only active in tiling mode) -----------------
     ("Tiling", ["Meta+T"], "Toggle window floating/tiling", ("kde", "kwin", "KrohnkiteToggleFloat", [])),
-    ("Tiling", ["Meta+J"], "Toggle window split", ("kde", "kwin", "KrohnkiteRotate", [])),
+    ("Tiling", ["Meta+J"], "Cycle favorite layouts", ("kde", "kwin", "KrohnkiteHalcyonCycle", [])),
+    ("Tiling", ["Meta+Shift+J"], "Toggle window split", ("kde", "kwin", "KrohnkiteRotate", [])),
     ("Tiling", ["Meta+L"], "Cycle workspace layout", ("kde", "kwin", "KrohnkiteNextLayout", [])),
     ("Tiling", ["Meta+Alt+L"], "Cycle workspace layout back", ("kde", "kwin", "KrohnkitePreviousLayout", [])),
     ("Tiling", ["Meta+Shift+Left"], "Swap window left", ("kde", "kwin", "KrohnkiteShiftLeft", [])),

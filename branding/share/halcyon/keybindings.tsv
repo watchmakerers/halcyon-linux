@@ -37,7 +37,8 @@ Monitors	Meta+Alt+Right	Focus monitor right
 Monitors	Meta+Alt+Shift+Left	Move window to monitor left
 Monitors	Meta+Alt+Shift+Right	Move window to monitor right
 Tiling	Meta+T	Toggle window floating/tiling
-Tiling	Meta+J	Toggle window split
+Tiling	Meta+J	Cycle favorite layouts
+Tiling	Meta+Shift+J	Toggle window split
 Tiling	Meta+L	Cycle workspace layout
 Tiling	Meta+Alt+L	Cycle workspace layout back
 Tiling	Meta+Shift+Left	Swap window left

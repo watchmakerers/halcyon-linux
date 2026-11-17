@@ -16,6 +16,11 @@ if [[ ! -d $M/work/dev ]] && ! mountpoint -q "$M"; then
 fi
 pkg=$(ls -t "$M"/work/dev/halcyon-branding-*.pkg.tar.zst 2>/dev/null | head -1)
 [[ -n $pkg ]] || { echo "No package yet: run ./dev.sh on the host first." >&2; exit 1; }
+# halcyon-branding now builds the rounded corners effect itself; pacman -U
+# won't replace the old distro package on its own (--noconfirm answers "no").
+if pacman -Q kwin-effect-rounded-corners &>/dev/null; then
+    sudo pacman -Rdd --noconfirm kwin-effect-rounded-corners
+fi
 sudo pacman -U --noconfirm "$pkg"
 
 # Drop cached SVG renders so same-named themes really reload.

@@ -17,11 +17,12 @@ KrohnkiteFocusPrev=none,none,KrohnkiteFocusPrev
 KrohnkiteFocusRight=none,none,KrohnkiteFocusRight
 KrohnkiteFocusUp=none,none,KrohnkiteFocusUp
 KrohnkiteGrowHeight=Meta+Shift+=\tMeta++,none,Grow window height
+KrohnkiteHalcyonCycle=Meta+J,none,Cycle favorite layouts
 KrohnkiteIncrease=none,none,KrohnkiteIncrease
 KrohnkiteMonocleLayout=none,none,KrohnkiteMonocleLayout
 KrohnkiteNextLayout=Meta+L,none,Cycle workspace layout
 KrohnkitePreviousLayout=Meta+Alt+L,none,Cycle workspace layout back
-KrohnkiteRotate=Meta+J,none,Toggle window split
+KrohnkiteRotate=Meta+Shift+J,none,Toggle window split
 KrohnkiteRotatePart=none,none,KrohnkiteRotatePart
 KrohnkiteSetMaster=none,none,KrohnkiteSetMaster
 KrohnkiteShiftDown=Meta+Shift+Down,none,Swap window down

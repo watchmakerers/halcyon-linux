@@ -1,0 +1,9 @@
+[Trigger]
+Operation = Remove
+Type = Package
+Target = halcyon-branding
+
+[Action]
+Description = Removing rounded window corners...
+When = PreTransaction
+Exec = /usr/lib/halcyon/build-rounded-corners --remove
