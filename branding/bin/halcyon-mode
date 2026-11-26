@@ -39,8 +39,10 @@ kwin_js() {  # kwin_js <code>: run a one-shot KWin script
     f=$(mktemp --suffix=.js)
     printf '%s\n' "$1" >"$f"
     id=$(dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript string:"$f" string:halcyon-oneshot | awk '{print $NF}')
-    dbus org.kde.KWin /Scripting/Script"$id" org.kde.kwin.Script.run >/dev/null
-    sleep 0.2
+    [[ $id =~ ^[0-9]+$ ]] || { rm -f "$f"; return 1; }
+    # KWin 6.8 ignores Script.run on a loaded script; Scripting.start runs it.
+    dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.start >/dev/null
+    sleep 0.3
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript string:halcyon-oneshot >/dev/null || true
     rm -f "$f"
 }
@@ -50,10 +52,16 @@ current() { get --file halcyonrc --group Mode --key current --default classic; }
 # Monitors that stay floating in tiling mode, comma-separated connector names.
 float_screens() { get --file halcyonrc --group Mode --key floatScreens --default ""; }
 
+# Panels on a connected monitor. A panel whose monitor is unplugged has no view,
+# and Plasma (6.8) segfaults when a script sets its floating/hiding/lengthMode
+# (an off-by-one in Panel::panelConfig hands it an invalid config group).
+PANELS="panels().filter(function (p) { return p.screen >= 0 && p.screen < screenCount; })"
+
 # Panel placement per mode (Plasma script, acting on panel p).
 PANEL_CLASSIC="p.location = 'bottom'; p.height = Math.round(gridUnit * 2.1); p.floating = false; p.lengthMode = 'fill'; p.hiding = 'none';"
+# Tiling: a rounded bar floating off the top edge, only as wide as its contents, centered.
 PANEL_TILING="p.location = 'top'; p.height = Math.round(gridUnit * 1.6); p.floating = true; p.hiding = 'none';
-    if (p.widgets().length == p.widgets('org.halcyon.workspaces').length) { p.lengthMode = 'fit'; p.alignment = 'center'; }"
+    p.lengthMode = 'fit'; p.alignment = 'center';"
 
 # Top-left corners ("x,y") of the floating monitors, to find their panels:
 # Plasma's scripting API knows a panel's screen geometry, not its connector name.
@@ -138,11 +146,44 @@ tiling_effects() {  # tiling_effects true|false
     fi
 }
 
+# Tiling mode switches workspaces from the orbs: put them next to the Start orb
+# on any taskbar that lacks them (they used to live only on a second monitor's
+# orbs-only bar, so the laptop alone had none). A new widget is appended and the
+# panel ignores an AppletOrder written while it runs, so plasmashell restarts
+# once to take the order.
+ensure_orbs() {
+    local added
+    added=$(dbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "string:$PANELS.forEach(function (p) {
+        if (p.widgets('org.halcyon.workspaces').length || !p.widgets('org.halcyon.startmenu').length) return;
+        var orbs = p.addWidget('org.halcyon.workspaces');
+        var ids = p.widgetIds.filter(function (i) { return i != orbs.id; });
+        ids.splice(ids.indexOf(p.widgets('org.halcyon.startmenu')[0].id) + 1, 0, orbs.id);
+        p.currentConfigGroup = ['General'];
+        p.writeConfig('AppletOrder', ids.join(';'));
+        print('added');
+    })" 2>/dev/null) || true
+    if [[ $added == *added* ]]; then
+        sleep 1  # let plasmashell write its config
+        dbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "string:$PANELS.forEach(function (p) {
+            var o = p.widgets('org.halcyon.workspaces'), s = p.widgets('org.halcyon.startmenu');
+            if (!o.length || !s.length) return;
+            var ids = p.widgetIds.filter(function (i) { return i != o[0].id; });
+            ids.splice(ids.indexOf(s[0].id) + 1, 0, o[0].id);
+            p.currentConfigGroup = ['General']; p.writeConfig('AppletOrder', ids.join(';'));
+        })" >/dev/null 2>&1 || true
+        systemctl --user restart plasma-plasmashell.service
+        for _ in {1..20}; do  # wait until the shell answers again
+            dbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "string:1" >/dev/null 2>&1 && break
+            sleep 0.5
+        done
+    fi
+}
+
 tiling() {
     cfg --file halcyonrc --group Mode --key current tiling
     tiling_effects true
     cfg --file kwinrc --group Plugins --key krohnkiteEnabled true
-    cfg --file kwinrc --group Script-krohnkite --key screenGapTop 8
+    cfg --file kwinrc --group Script-krohnkite --key screenGapTop 17
     cfg --file kwinrc --group Script-krohnkite --key screenGapBottom 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapLeft 8
     cfg --file kwinrc --group Script-krohnkite --key screenGapRight 8
@@ -164,6 +205,15 @@ tiling() {
         cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight ""
     fi
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
+    set_desktops "$(get --file halcyonrc --group Mode --key workspaces --default 10)"  # tiling-mode workspace count
+    # Move the panels before Krohnkite starts: it lays windows out in the work area
+    # it sees then and doesn't re-tile when a panel moves, so tiles started under
+    # the new top bar (and stopped short of the old bottom one).
+    # Floating monitors keep the classic taskbar; tiled ones get the slim top bar.
+    local corners; corners=$(float_corners | sed "s/.*/'&'/" | paste -sd,)
+    plasma_js "var floats = [$corners]; $PANELS.forEach(function (p) { var g = screenGeometry(p.screen); if (floats.indexOf(g.x + ',' + g.y) >= 0) { $PANEL_CLASSIC } else { $PANEL_TILING } })"
+    ensure_orbs
+    sleep 0.5  # let the panel's reserved space settle
     # Enabling the plugin in kwinrc isn't enough: ask KWin to load enabled scripts.
     dbus org.kde.KWin /Scripting org.kde.kwin.Scripting.start >/dev/null
     sleep 0.3
@@ -171,10 +221,6 @@ tiling() {
         notify "Tiling failed: KWin could not load Krohnkite (see: journalctl --user -b | grep -i krohnkite)"
         echo "Krohnkite did not load." >&2
     fi
-    set_desktops "$(get --file halcyonrc --group Mode --key workspaces --default 10)"  # tiling-mode workspace count
-    # Floating monitors keep the classic taskbar; tiled ones get the slim top bar.
-    local corners; corners=$(float_corners | sed "s/.*/'&'/" | paste -sd,)
-    plasma_js "var floats = [$corners]; panels().forEach(function (p) { var g = screenGeometry(p.screen); if (floats.indexOf(g.x + ',' + g.y) >= 0) { $PANEL_CLASSIC } else { $PANEL_TILING } })"
     notify "Tiling mode: Super+Ctrl+Alt+Space to go back"
 }
 
@@ -189,7 +235,7 @@ classic() {
     cfg --file kwinrc --group org.kde.kdecoration2 --key ButtonsOnRight IAX
     dbus org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null
     set_desktops 4
-    plasma_js "panels().forEach(function (p) { $PANEL_CLASSIC })"
+    plasma_js "$PANELS.forEach(function (p) { $PANEL_CLASSIC })"
     notify "Classic mode"
 }
 
@@ -208,7 +254,7 @@ case ${1:-toggle} in
         fi
         echo "floating monitors: ${floats:-none}"
         ;;
-    bar)     plasma_js "panels().forEach(function (p) { p.hiding = (p.hiding == 'none') ? 'autohide' : 'none'; })" ;;
+    bar)     plasma_js "$PANELS.forEach(function (p) { p.hiding = (p.hiding == 'none') ? 'autohide' : 'none'; })" ;;
     status)  echo "mode: $(current)"; echo "floating monitors: $(float_screens)"; script_loaded && echo "krohnkite: loaded" || echo "krohnkite: not loaded" ;;
     *)       echo "usage: halcyon-mode classic|tiling|toggle|float [MONITOR...]|bar|status" >&2; exit 2 ;;
 esac

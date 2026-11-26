@@ -11,7 +11,8 @@ depends=(plasma-workspace kwin sddm plymouth oxygen oxygen-icons adobe-source-sa
          cabextract 7zip ffmpeg python-mutagen rsync
          adobe-source-han-sans-otc-fonts
          # rounded corners effect, compiled on the machine for its KWin (lib/build-rounded-corners)
-         cmake extra-cmake-modules gcc make kcmutils kconfigwidgets ki18n libepoxy libxcb gettext)
+         cmake extra-cmake-modules gcc make kcmutils kconfigwidgets ki18n libepoxy libxcb gettext
+         vulkan-headers)  # KWin 6.8+'s CMake config requires Vulkan
 # Halcyon builds the rounded corners effect itself, matched to the installed KWin.
 provides=(kwin-effect-rounded-corners)
 conflicts=(kwin-effect-rounded-corners)

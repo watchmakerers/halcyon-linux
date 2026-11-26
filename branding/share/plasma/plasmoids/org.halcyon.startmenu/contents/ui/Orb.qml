@@ -19,8 +19,10 @@ MouseArea {
     readonly property real thick: vertical ? width : height
     readonly property var panelWin: Window.window
     readonly property real panelThick: panelWin && panelWin.thickness > 0 ? panelWin.thickness : thick
+    // Only a bottom taskbar: on tiling mode's top bar a rising orb hung down
+    // past the bar, so there it sits inside the bar like on the classic taskbar.
     readonly property bool rising: Plasmoid.configuration.floatingOrb && !vertical
-        && (edge === PlasmaCore.Types.BottomEdge || topEdge)
+        && edge === PlasmaCore.Types.BottomEdge
 
     // Room between our slot and the inner edge of the panel window (the edge
     // facing the middle of the screen). Updated by measure().

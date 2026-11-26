@@ -37,7 +37,8 @@ PlasmoidItem {
         onNewData: (source) => disconnectSource(source)
     }
     function activate(id) {
-        run.connectSource("dbus-send --session --dest=org.kde.KWin /VirtualDesktopManager "
+        // --type=method_call: without it (or --print-reply) dbus-send sends a signal, which KWin ignores.
+        run.connectSource("dbus-send --session --type=method_call --dest=org.kde.KWin /VirtualDesktopManager "
             + "org.freedesktop.DBus.Properties.Set string:org.kde.KWin.VirtualDesktopManager "
             + "string:current variant:string:" + id)
     }
